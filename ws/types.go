@@ -64,7 +64,6 @@ type IndivBookTickerUpdate struct {
 	BidQty   string `json:"B"` // BidQty
 	AskPrice string `json:"a"` // AskPrice
 	AskQty   string `json:"A"` // AskQty
-	binance.BookTicker
 }
 
 // AllMarketTickerUpdate represents incoming ticker websocket feed for all book tickers
