@@ -29,7 +29,7 @@ func main() {
     }
 
     for _, p := range prices {
-        log.Printf("symbol: %s, price: %s", p.Price, p.Symbol)
+        log.Printf("symbol: %s, price: %s", p.Symbol, p.Price)
     }
 }
 ```
@@ -64,5 +64,5 @@ msg, err := ws.Read()
 Full documentation on [pkg.go.dev](https://pkg.go.dev/github.com/xenking/binance-api)
 
 ## License
-This library is under the [MIT License](https://opensource.org/licenses/MIT). See the [LICENSE](LICENSE) file for more info.
+This library is under the [MIT License](https://opensource.org/licenses/MIT). See the [LICENSE](LICENSE.md) file for more info.
 
