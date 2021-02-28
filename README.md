@@ -1,7 +1,7 @@
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/xenking/binance-api)](https://pkg.go.dev/github.com/xenking/binance-api)
 [![Go Report Card](https://goreportcard.com/badge/github.com/xenking/binance-api)](https://goreportcard.com/report/github.com/xenking/binance-api)
 # Golang Binance API
-binance-api is a fast and lightweight Golang implementation for [Binance API](https://github.com/binance-exchange/binance-official-api-docs), providing complete API coverage, and supports both REST API and websockets API
+binance-api is a fast and lightweight Golang implementation for [Binance API](https://github.com/binance/binance-spot-api-docs), providing complete API coverage, and supports both REST API and websockets API
 
 This library created to help you interact with the Binance API, streaming candlestick charts data, market depth, or use other advanced features binance exposes via API. 
 
