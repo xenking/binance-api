@@ -1,7 +1,6 @@
 package binance
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/segmentio/encoding/json"
@@ -18,12 +17,7 @@ type Client struct {
 
 func NewClient(apikey, secret string) *Client {
 	return &Client{
-		c: &restClient{
-			window: 5000,
-			apikey: apikey,
-			secret: secret,
-			client: newHTTPClient(),
-		},
+		c: newRestClient(apikey, secret),
 	}
 }
 

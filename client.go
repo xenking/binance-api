@@ -4,20 +4,30 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
-	"net/http"
+	"hash"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/google/go-querystring/query"
+	"github.com/segmentio/encoding/json"
 	"github.com/valyala/bytebufferpool"
 	"github.com/valyala/fasthttp"
 )
 
+func newRestClient(apikey, secret string) *restClient {
+	return &restClient{
+		window: 5000,
+		apikey: apikey,
+		hmac: hmac.New(sha256.New, s2b(secret)),
+		client: newHTTPClient(),
+	}
+}
+
 // restClient represents the actual HTTP restClient, that is being used to interact with binance API server
 type restClient struct {
 	apikey string
-	secret string
+	hmac   hash.Hash
 	client *fasthttp.HostClient
 	window int
 }
@@ -49,25 +59,35 @@ func (c *restClient) do(method, endpoint string, data interface{}, sign bool, st
 	if err != nil {
 		return nil, err
 	}
-
-	var pb strings.Builder
-	pb.WriteString(values.Encode())
+	encoded := values.Encode()
+	var pb []byte
+	if sign {
+		pb = make([]byte, len(encoded), len(encoded)+116)
+	} else {
+		pb = make([]byte, len(encoded))
+	}
+	copy(pb, encoded)
 	// Signed requests require the additional timestamp, window size and signature of the payload
 	// Remark: This is done only to routes with actual data
 	if sign {
 		buf := bytebufferpool.Get()
-		pb.WriteString("&timestamp=")
-		pb.Write(strconv.AppendInt(buf.B, time.Now().UnixNano()/(1000*1000), 10))
-		pb.WriteString("&recvWindow=")
-		pb.Write(strconv.AppendInt(buf.B, int64(c.window), 10))
+		pb = append(pb, "&timestamp="...)
+		pb = append(pb, strconv.AppendInt(buf.B, time.Now().UnixNano()/(1000*1000), 10)...)
+		buf.Reset()
+		pb = append(pb, "&recvWindow="...)
+		pb = append(pb, strconv.AppendInt(buf.B, int64(c.window), 10)...)
 
-		mac := hmac.New(sha256.New, []byte(c.secret))
-		_, err = mac.Write([]byte(pb.String()))
+		_, err = c.hmac.Write(pb)
 		if err != nil {
 			return nil, err
 		}
-		pb.WriteString("&signature=")
-		pb.WriteString(hex.EncodeToString(mac.Sum(nil)))
+		pb = append(pb, "&signature="...)
+		sum := c.hmac.Sum(nil)
+		enc := make([]byte, len(sum)*2)
+		hex.Encode(enc, sum)
+		pb = append(pb, enc...)
+
+		c.hmac.Reset()
 		bytebufferpool.Put(buf)
 	}
 
@@ -82,12 +102,13 @@ func (c *restClient) do(method, endpoint string, data interface{}, sign bool, st
 	req.URI().SetScheme(defaultSchema)
 	req.Header.SetMethod(method)
 
-	if method == http.MethodGet {
+	if method == fasthttp.MethodGet {
+		b.Grow(len(pb)+1)
 		b.WriteByte('?')
-		b.WriteString(pb.String())
+		b.Write(pb)
 	} else {
 		req.Header.Add("Content-Type", defaultHeaderForm)
-		req.SetBodyString(pb.String())
+		req.SetBody(pb)
 	}
 	req.SetRequestURI(b.String())
 
