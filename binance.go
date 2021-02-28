@@ -1,9 +1,8 @@
 package binance
 
 import (
-	"net/http"
-
 	"github.com/segmentio/encoding/json"
+	"github.com/valyala/fasthttp"
 )
 
 const (
@@ -30,13 +29,13 @@ func (c *Client) ReqWindow(window int) *Client {
 
 // Ping tests connectivity to the Rest API
 func (c *Client) Ping() error {
-	_, err := c.c.do(http.MethodGet, EndpointPing, nil, false, false)
+	_, err := c.c.do(fasthttp.MethodGet, EndpointPing, nil, false, false)
 	return err
 }
 
 // Time tests connectivity to the Rest API and get the current server time
 func (c *Client) Time() (*ServerTime, error) {
-	res, err := c.c.do(http.MethodGet, EndpointTime, nil, false, false)
+	res, err := c.c.do(fasthttp.MethodGet, EndpointTime, nil, false, false)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +52,7 @@ func (c *Client) Depth(req *DepthReq) (*Depth, error) {
 	if req.Limit == 0 || req.Limit > 100 {
 		req.Limit = 100
 	}
-	res, err := c.c.do(http.MethodGet, EndpointDepth, req, false, false)
+	res, err := c.c.do(fasthttp.MethodGet, EndpointDepth, req, false, false)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +71,7 @@ func (c *Client) Trades(req *TradeReq) ([]*Trade, error) {
 	if req.Limit < 500 || req.Limit > 1000 {
 		req.Limit = 500
 	}
-	res, err := c.c.do(http.MethodGet, EndpointTrades, req, false, false)
+	res, err := c.c.do(fasthttp.MethodGet, EndpointTrades, req, false, false)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +90,7 @@ func (c *Client) AggregatedTrades(req *AggregatedTradeReq) ([]*AggregatedTrade, 
 	if req.Limit < 500 || req.Limit > 1000 {
 		req.Limit = 500
 	}
-	res, err := c.c.do(http.MethodGet, EndpointAggTrades, req, false, false)
+	res, err := c.c.do(fasthttp.MethodGet, EndpointAggTrades, req, false, false)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +112,7 @@ func (c *Client) Klines(req *KlinesReq) ([]*Klines, error) {
 	if req.Limit == 0 || req.Limit > 500 {
 		req.Limit = 500
 	}
-	res, err := c.c.do(http.MethodGet, EndpointKlines, req, false, false)
+	res, err := c.c.do(fasthttp.MethodGet, EndpointKlines, req, false, false)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +123,7 @@ func (c *Client) Klines(req *KlinesReq) ([]*Klines, error) {
 
 // Tickers returns 24 hour price change statistics
 func (c *Client) Tickers() ([]*TickerStats, error) {
-	res, err := c.c.do(http.MethodGet, EndpointTicker24h, nil, false, false)
+	res, err := c.c.do(fasthttp.MethodGet, EndpointTicker24h, nil, false, false)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +136,7 @@ func (c *Client) Ticker(req *TickerReq) (*TickerStats, error) {
 	if req == nil {
 		return nil, ErrNilRequest
 	}
-	res, err := c.c.do(http.MethodGet, EndpointTicker24h, req, false, false)
+	res, err := c.c.do(fasthttp.MethodGet, EndpointTicker24h, req, false, false)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +152,7 @@ func (c *Client) AvgPrice(req *AvgPriceReq) (*AvgPrice, error) {
 	if req.Symbol == "" {
 		return nil, ErrEmptySymbol
 	}
-	res, err := c.c.do(http.MethodGet, EndpointAvgPrice, req, false, false)
+	res, err := c.c.do(fasthttp.MethodGet, EndpointAvgPrice, req, false, false)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +162,7 @@ func (c *Client) AvgPrice(req *AvgPriceReq) (*AvgPrice, error) {
 
 // Prices calculates the latest price for all symbols
 func (c *Client) Prices() ([]*SymbolPrice, error) {
-	res, err := c.c.do(http.MethodGet, EndpointTickerPrice, nil, false, false)
+	res, err := c.c.do(fasthttp.MethodGet, EndpointTickerPrice, nil, false, false)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +175,7 @@ func (c *Client) Price(req *TickerPriceReq) (*SymbolPrice, error) {
 	if req == nil {
 		return nil, ErrNilRequest
 	}
-	res, err := c.c.do(http.MethodGet, EndpointTickerPrice, req, false, false)
+	res, err := c.c.do(fasthttp.MethodGet, EndpointTickerPrice, req, false, false)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +185,7 @@ func (c *Client) Price(req *TickerPriceReq) (*SymbolPrice, error) {
 
 // BookTickers returns best price/qty on the order book for all symbols
 func (c *Client) BookTickers() ([]*BookTicker, error) {
-	res, err := c.c.do(http.MethodGet, EndpointTickerBook, nil, false, false)
+	res, err := c.c.do(fasthttp.MethodGet, EndpointTickerBook, nil, false, false)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +198,7 @@ func (c *Client) BookTicker(req *BookTickerReq) (*BookTicker, error) {
 	if req == nil {
 		return nil, ErrNilRequest
 	}
-	res, err := c.c.do(http.MethodGet, EndpointTickerBook, req, false, false)
+	res, err := c.c.do(fasthttp.MethodGet, EndpointTickerBook, req, false, false)
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +226,7 @@ func (c *Client) NewOrder(req *OrderReq) (*OrderRespAck, error) {
 			return nil, ErrEmptyMarket
 		}
 	}
-	res, err := c.c.do(http.MethodPost, EndpointOrder, req, true, false)
+	res, err := c.c.do(fasthttp.MethodPost, EndpointOrder, req, true, false)
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +254,7 @@ func (c *Client) NewOrderResult(req *OrderReq) (*OrderRespResult, error) {
 		}
 	}
 	req.OrderRespType = OrderRespTypeResult
-	res, err := c.c.do(http.MethodPost, EndpointOrder, req, true, false)
+	res, err := c.c.do(fasthttp.MethodPost, EndpointOrder, req, true, false)
 	if err != nil {
 		return nil, err
 	}
@@ -283,7 +282,7 @@ func (c *Client) NewOrderFull(req *OrderReq) (*OrderRespFull, error) {
 		}
 	}
 	req.OrderRespType = OrderRespTypeFull
-	res, err := c.c.do(http.MethodPost, EndpointOrder, req, true, false)
+	res, err := c.c.do(fasthttp.MethodPost, EndpointOrder, req, true, false)
 	if err != nil {
 		return nil, err
 	}
@@ -297,7 +296,7 @@ func (c *Client) NewOrderTest(req *OrderReq) error {
 	if req == nil {
 		return ErrNilRequest
 	}
-	_, err := c.c.do(http.MethodPost, EndpointOrderTest, req, true, false)
+	_, err := c.c.do(fasthttp.MethodPost, EndpointOrderTest, req, true, false)
 	return err
 }
 
@@ -309,7 +308,7 @@ func (c *Client) QueryOrder(req *QueryOrderReq) (*QueryOrder, error) {
 	if req.OrderID < 0 && req.OrigClientOrderId == "" {
 		return nil, ErrEmptyOrderID
 	}
-	res, err := c.c.do(http.MethodGet, EndpointOrder, req, true, false)
+	res, err := c.c.do(fasthttp.MethodGet, EndpointOrder, req, true, false)
 	if err != nil {
 		return nil, err
 	}
@@ -325,7 +324,7 @@ func (c *Client) CancelOrder(req *CancelOrderReq) (*CancelOrder, error) {
 	if req.OrderID < 0 || (req.OrigClientOrderId == "" && req.NewClientOrderId == "") {
 		return nil, ErrEmptyOrderID
 	}
-	res, err := c.c.do(http.MethodDelete, EndpointOrder, req, true, false)
+	res, err := c.c.do(fasthttp.MethodDelete, EndpointOrder, req, true, false)
 	if err != nil {
 		return nil, err
 	}
@@ -338,7 +337,7 @@ func (c *Client) OpenOrders(req *OpenOrdersReq) ([]*QueryOrder, error) {
 	if req == nil {
 		return nil, ErrNilRequest
 	}
-	res, err := c.c.do(http.MethodGet, EndpointOpenOrders, req, true, false)
+	res, err := c.c.do(fasthttp.MethodGet, EndpointOpenOrders, req, true, false)
 	if err != nil {
 		return nil, err
 	}
@@ -351,7 +350,7 @@ func (c *Client) CancelOpenOrders(req *CancelOpenOrdersReq) ([]*CancelOrder, err
 	if req == nil {
 		return nil, ErrNilRequest
 	}
-	res, err := c.c.do(http.MethodDelete, EndpointOpenOrders, req, true, false)
+	res, err := c.c.do(fasthttp.MethodDelete, EndpointOpenOrders, req, true, false)
 	if err != nil {
 		return nil, err
 	}
@@ -367,7 +366,7 @@ func (c *Client) AllOrders(req *AllOrdersReq) ([]*QueryOrder, error) {
 	if req.Limit == 0 {
 		req.Limit = 500
 	}
-	res, err := c.c.do(http.MethodGet, EndpointOrdersAll, req, true, false)
+	res, err := c.c.do(fasthttp.MethodGet, EndpointOrdersAll, req, true, false)
 	if err != nil {
 		return nil, err
 	}
@@ -377,7 +376,7 @@ func (c *Client) AllOrders(req *AllOrdersReq) ([]*QueryOrder, error) {
 
 // Account get current account information
 func (c *Client) Account() (*AccountInfo, error) {
-	res, err := c.c.do(http.MethodGet, EndpointAccount, nil, true, false)
+	res, err := c.c.do(fasthttp.MethodGet, EndpointAccount, nil, true, false)
 	if err != nil {
 		return nil, err
 	}
@@ -393,7 +392,7 @@ func (c *Client) AccountTrades(req *AccountTradesReq) (*AccountTrades, error) {
 	if req.Limit == 0 || req.Limit > 500 {
 		req.Limit = 500
 	}
-	res, err := c.c.do(http.MethodGet, EndpointAccountTrades, req, true, false)
+	res, err := c.c.do(fasthttp.MethodGet, EndpointAccountTrades, req, true, false)
 	if err != nil {
 		return nil, err
 	}
@@ -402,7 +401,7 @@ func (c *Client) AccountTrades(req *AccountTradesReq) (*AccountTrades, error) {
 }
 
 func (c *Client) ExchangeInfo() (*ExchangeInfo, error) {
-	res, err := c.c.do(http.MethodGet, EndpointExchangeInfo, nil, false, false)
+	res, err := c.c.do(fasthttp.MethodGet, EndpointExchangeInfo, nil, false, false)
 	if err != nil {
 		return nil, err
 	}
@@ -414,7 +413,7 @@ func (c *Client) ExchangeInfo() (*ExchangeInfo, error) {
 
 // DatastreamReq starts a new user datastream
 func (c *Client) DataStream() (string, error) {
-	res, err := c.c.do(http.MethodPost, EndpointDataStream, nil, false, true)
+	res, err := c.c.do(fasthttp.MethodPost, EndpointDataStream, nil, false, true)
 	if err != nil {
 		return "", err
 	}
@@ -425,12 +424,12 @@ func (c *Client) DataStream() (string, error) {
 
 // DataStreamKeepAlive pings the datastream key to prevent timeout
 func (c *Client) DataStreamKeepAlive(listenKey string) error {
-	_, err := c.c.do(http.MethodPut, EndpointDataStream, DatastreamReq{ListenKey: listenKey}, false, true)
+	_, err := c.c.do(fasthttp.MethodPut, EndpointDataStream, DatastreamReq{ListenKey: listenKey}, false, true)
 	return err
 }
 
 // DataStreamClose closes the datastream key
 func (c *Client) DataStreamClose(listenKey string) error {
-	_, err := c.c.do(http.MethodDelete, EndpointDataStream, DatastreamReq{ListenKey: listenKey}, false, true)
+	_, err := c.c.do(fasthttp.MethodDelete, EndpointDataStream, DatastreamReq{ListenKey: listenKey}, false, true)
 	return err
 }
