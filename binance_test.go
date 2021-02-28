@@ -60,15 +60,42 @@ func TestClient_Prices(t *testing.T) {
 	require.NoError(t, e)
 }
 
-func TestClient_Order(t *testing.T) {
+func TestClient_NewOrder(t *testing.T) {
 	ctx := newBinanceCtx()
 	_, e := ctx.api.NewOrder(&OrderReq{
 		Symbol:      "NEOBTC",
 		Side:        OrderSideSell,
 		Type:        OrderTypeLimit,
 		TimeInForce: TimeInForceGTC,
-		Quantity:    1,
-		Price:       0.1,
+		Quantity:    "1",
+		Price:       "0.1",
+	})
+	require.NoError(t, e)
+}
+
+func TestClient_NewOrderResult(t *testing.T) {
+	ctx := newBinanceCtx()
+	_, e := ctx.api.NewOrderResult(&OrderReq{
+		Symbol:      "NEOBTC",
+		Side:        OrderSideSell,
+		Type:        OrderTypeLimit,
+		TimeInForce: TimeInForceGTC,
+		Quantity:    "1",
+		Price:       "0.1",
+	})
+	require.NoError(t, e)
+}
+
+
+func TestClient_NewOrderFull(t *testing.T) {
+	ctx := newBinanceCtx()
+	_, e := ctx.api.NewOrderFull(&OrderReq{
+		Symbol:      "NEOBTC",
+		Side:        OrderSideSell,
+		Type:        OrderTypeLimit,
+		TimeInForce: TimeInForceGTC,
+		Quantity:    "1",
+		Price:       "0.1",
 	})
 	require.NoError(t, e)
 }
@@ -80,8 +107,8 @@ func TestClient_QueryCancelOrder(t *testing.T) {
 		Side:        OrderSideSell,
 		Type:        OrderTypeLimit,
 		TimeInForce: TimeInForceGTC,
-		Quantity:    1,
-		Price:       0.1,
+		Quantity:    "1",
+		Price:       "0.1",
 	})
 	require.NoError(t, e)
 	q, e := ctx.api.QueryOrder(&QueryOrderReq{

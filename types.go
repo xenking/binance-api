@@ -3,6 +3,7 @@ package binance
 import (
 	"bytes"
 	"github.com/valyala/fasthttp"
+	"github.com/xenking/decimal"
 )
 
 // OrderType represents the order type
@@ -74,13 +75,13 @@ type OrderReq struct {
 	Symbol           string        `url:"symbol"`
 	Side             OrderSide     `url:"side"`
 	Type             OrderType     `url:"type"`
-	Quantity         float64       `url:"quantity,omitempty"`
-	QuoteQuantity    float64       `url:"quoteOrderQty,omitempty"`
-	Price            float64       `url:"price,omitempty"`
+	Quantity         string        `url:"quantity,omitempty"`
+	QuoteQuantity    string        `url:"quoteOrderQty,omitempty"`
+	Price            string        `url:"price,omitempty"`
 	TimeInForce      TimeInForce   `url:"timeInForce"`
 	NewClientOrderId string        `url:"newClientOrderId,omitempty"`
-	StopPrice        float64       `url:"stopPrice,omitempty"`
-	IcebergQty       float64       `url:"icebergQty,omitempty"`
+	StopPrice        string        `url:"stopPrice,omitempty"`
+	IcebergQty       string        `url:"icebergQty,omitempty"`
 	OrderRespType    OrderRespType `url:"newOrderRespType,omitempty"`
 }
 
@@ -163,8 +164,8 @@ type DepthReq struct {
 
 // DepthElem represents a specific order in the order book
 type DepthElem struct {
-	Quantity float64 `json:"quantity"`
-	Price    float64 `json:"price"`
+	Quantity decimal.Decimal `json:"quantity"`
+	Price    decimal.Decimal `json:"price"`
 }
 
 // UnmarshalJSON unmarshal the given depth raw data and converts to depth struct
@@ -173,17 +174,29 @@ func (b *DepthElem) UnmarshalJSON(data []byte) error {
 		return ErrNilUnmarshal
 	}
 
-	if len(data) == 0 {
+	if len(data) <= 4 {
 		return nil
 	}
-
-	tokens := bytes.Split(data, []byte(`"`))
-	if len(tokens) < 5 {
-		return errors.New("at least five fields are expected")
+	qty, price := 3, 0
+	next := false
+	for qty < len(data)-1 {
+		if data[qty] == '"' {
+			if next {
+				break
+			}
+			next = true
+			price = qty
+			qty += 3
+			continue
+		}
+		qty++
+	}
+	if price < 3 || qty < 4 || !next {
+		return ErrInvalidJson
 	}
 	var err error
-	b.Price, err = fasthttp.ParseUfloat(tokens[1])
-	b.Quantity, err = fasthttp.ParseUfloat(tokens[3])
+	b.Price, err = decimal.NewFromString(b2s(data[2:price]))
+	b.Quantity, err = decimal.NewFromString(b2s(data[price+3 : qty]))
 	return err
 }
 
@@ -219,22 +232,22 @@ type KlinesReq struct {
 
 type Klines struct {
 	OpenTime                 uint64
-	OpenPrice                float64
-	High                     float64
-	Low                      float64
-	ClosePrice               float64
-	Volume                   float64
+	OpenPrice                decimal.Decimal
+	High                     decimal.Decimal
+	Low                      decimal.Decimal
+	ClosePrice               decimal.Decimal
+	Volume                   decimal.Decimal
 	CloseTime                uint64
-	QuoteAssetVolume         float64
+	QuoteAssetVolume         decimal.Decimal
 	Trades                   int
-	TakerBuyBaseAssetVolume  float64
-	TakerBuyQuoteAssetVolume float64
+	TakerBuyBaseAssetVolume  decimal.Decimal
+	TakerBuyQuoteAssetVolume decimal.Decimal
 }
 
 // UnmarshalJSON unmarshal the given depth raw data and converts to depth struct
 func (b *Klines) UnmarshalJSON(data []byte) error {
 	if b == nil {
-		return errors.New("UnmarshalJSON on nil pointer")
+		return ErrNilUnmarshal
 	}
 	if len(data) == 0 {
 		return nil
@@ -251,20 +264,20 @@ func (b *Klines) UnmarshalJSON(data []byte) error {
 		return ErrInvalidJson
 	}
 	b.OpenTime = uint64(u)
-	b.OpenPrice, err = fasthttp.ParseUfloat(tokens[1])
-	b.High, err = fasthttp.ParseUfloat(tokens[2])
-	b.Low, err = fasthttp.ParseUfloat(tokens[3])
-	b.ClosePrice, err = fasthttp.ParseUfloat(tokens[4])
-	b.Volume, err = fasthttp.ParseUfloat(tokens[5])
+	b.OpenPrice, err = decimal.NewFromString(b2s(tokens[1]))
+	b.High, err = decimal.NewFromString(b2s(tokens[2]))
+	b.Low, err = decimal.NewFromString(b2s(tokens[3]))
+	b.ClosePrice, err = decimal.NewFromString(b2s(tokens[4]))
+	b.Volume, err = decimal.NewFromString(b2s(tokens[5]))
 	u, err = fasthttp.ParseUint(tokens[6])
 	if err != nil {
 		return ErrInvalidJson
 	}
 	b.CloseTime = uint64(u)
-	b.QuoteAssetVolume, err = fasthttp.ParseUfloat(tokens[7])
+	b.QuoteAssetVolume, err = decimal.NewFromString(b2s(tokens[7]))
 	b.Trades, err = fasthttp.ParseUint(tokens[9])
-	b.TakerBuyBaseAssetVolume, err = fasthttp.ParseUfloat(tokens[9])
-	b.TakerBuyQuoteAssetVolume, err = fasthttp.ParseUfloat(tokens[10])
+	b.TakerBuyBaseAssetVolume, err = decimal.NewFromString(b2s(tokens[9]))
+	b.TakerBuyQuoteAssetVolume, err = decimal.NewFromString(b2s(tokens[10]))
 	return err
 }
 
