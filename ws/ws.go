@@ -1,9 +1,9 @@
 package ws
 
 import (
-	"github.com/dgrr/fastws"
 	"github.com/segmentio/encoding/json"
 	"github.com/valyala/bytebufferpool"
+	"github.com/xenking/fastws"
 )
 
 const (

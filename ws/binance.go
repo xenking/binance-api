@@ -3,9 +3,8 @@ package ws
 import (
 	"strings"
 
-	"github.com/dgrr/fastws"
-
 	"github.com/xenking/binance-api"
+	"github.com/xenking/fastws"
 )
 
 type Client struct {
