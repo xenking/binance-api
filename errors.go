@@ -1,27 +1,27 @@
 package binance
 
 import (
-	"strconv"
-	"strings"
+	"github.com/pkg/errors"
+	"github.com/segmentio/encoding/json"
 )
 
-const (
-	ErrNilRequest   = "req is nil"
-	ErrEmptySymbol  = "symbol are missing"
-	ErrEmptyOrderID = "order id must be set"
+var (
+	ErrNilRequest   = errors.New("request is nil")
+	ErrEmptySymbol  = errors.New("symbol are missing")
+	ErrEmptyOrderID = errors.New("order id must be set")
+	ErrEmptyLimit   = errors.New("empty price or quantity")
+	ErrEmptyMarket  = errors.New("quantity or quote quantity expected")
+	ErrNilUnmarshal = errors.New("UnmarshalJSON on nil pointer")
+	ErrInvalidJson  = errors.New("invalid json")
 )
 
 type APIError struct {
-	Code    int
-	Message []byte
+	Code int    `json:"code"`
+	Msg  string `json:"msg"`
 }
 
 // Error return error code and message
-func (e APIError) Error() string {
-	var b strings.Builder
-	b.WriteString("Code:")
-	b.WriteString(strconv.Itoa(e.Code))
-	b.WriteString(" \nBody:")
-	b.Write(e.Message)
-	return b.String()
+func (e *APIError) Error() string {
+	bb, _ := json.Marshal(e)
+	return b2s(bb)
 }

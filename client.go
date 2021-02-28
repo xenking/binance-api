@@ -98,7 +98,7 @@ func (c *restClient) do(method, endpoint string, data interface{}, sign bool, st
 	req.Header.Add("Accept", defaultHeaderJson)
 	resp := fasthttp.AcquireResponse()
 
-	if err := c.client.Do(req, resp); err != nil {
+	if err = c.client.Do(req, resp); err != nil {
 		return nil, err
 	}
 	fasthttp.ReleaseRequest(req)
@@ -109,10 +109,11 @@ func (c *restClient) do(method, endpoint string, data interface{}, sign bool, st
 	fasthttp.ReleaseResponse(resp)
 
 	if status != fasthttp.StatusOK {
-		return nil, APIError{
-			Code:    status,
-			Message: body,
+		apiErr := &APIError{}
+		if err = json.Unmarshal(body, apiErr); err != nil {
+			return nil, err
 		}
+		return nil, apiErr
 	}
 	return body, err
 }

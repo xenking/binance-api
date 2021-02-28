@@ -2,8 +2,6 @@ package binance
 
 import (
 	"bytes"
-	"errors"
-
 	"github.com/valyala/fasthttp"
 )
 
@@ -67,9 +65,9 @@ const (
 type OrderRespType string
 
 const (
-	OrderRespTypeASK    = "ASK"
-	OrderRespTypeRESULT = "RESULT"
-	OrderRespTypeFULL   = "FULL"
+	OrderRespTypeAsk    = "ASK"
+	OrderRespTypeResult = "RESULT"
+	OrderRespTypeFull   = "FULL"
 )
 
 type OrderReq struct {
@@ -140,21 +138,21 @@ type ServerTime struct {
 type KlineInterval string
 
 const (
-	KlineInterval1m  KlineInterval = "1m"
-	KlineInterval3m  KlineInterval = "3m"
-	KlineInterval5m  KlineInterval = "5m"
-	KlineInterval15m KlineInterval = "15m"
-	KlineInterval30m KlineInterval = "30m"
-	KlineInterval1h  KlineInterval = "1h"
-	KlineInterval2h  KlineInterval = "2h"
-	KlineInterval4h  KlineInterval = "4h"
-	KlineInterval6h  KlineInterval = "6h"
-	KlineInterval8h  KlineInterval = "8h"
-	KlineInterval12h KlineInterval = "12h"
-	KlineInterval1d  KlineInterval = "1d"
-	KlineInterval3d  KlineInterval = "3d"
-	KlineInterval1w  KlineInterval = "1w"
-	KlineInterval1M  KlineInterval = "1M"
+	KlineInterval1min   KlineInterval = "1m"
+	KlineInterval3min   KlineInterval = "3m"
+	KlineInterval5min   KlineInterval = "5m"
+	KlineInterval15min  KlineInterval = "15m"
+	KlineInterval30min  KlineInterval = "30m"
+	KlineInterval1hour  KlineInterval = "1h"
+	KlineInterval2hour  KlineInterval = "2h"
+	KlineInterval4hour  KlineInterval = "4h"
+	KlineInterval6hour  KlineInterval = "6h"
+	KlineInterval8hour  KlineInterval = "8h"
+	KlineInterval12hour KlineInterval = "12h"
+	KlineInterval1day   KlineInterval = "1d"
+	KlineInterval3day   KlineInterval = "3d"
+	KlineInterval1week  KlineInterval = "1w"
+	KlineInterval1month KlineInterval = "1M"
 )
 
 // DepthReq are used to specify symbol to retrieve order book for
@@ -172,7 +170,7 @@ type DepthElem struct {
 // UnmarshalJSON unmarshal the given depth raw data and converts to depth struct
 func (b *DepthElem) UnmarshalJSON(data []byte) error {
 	if b == nil {
-		return errors.New("UnmarshalJSON on nil pointer")
+		return ErrNilUnmarshal
 	}
 
 	if len(data) == 0 {
@@ -245,12 +243,12 @@ func (b *Klines) UnmarshalJSON(data []byte) error {
 	s = bytes.Trim(s, "[]")
 	tokens := bytes.Split(s, []byte(","))
 	if len(tokens) < 11 {
-		return errors.New("at least 11 fields are expected")
+		return ErrInvalidJson
 	}
 	var err error
 	u, err := fasthttp.ParseUint(tokens[0])
 	if err != nil {
-		return errors.New("failed to parse open time")
+		return ErrInvalidJson
 	}
 	b.OpenTime = uint64(u)
 	b.OpenPrice, err = fasthttp.ParseUfloat(tokens[1])
@@ -260,7 +258,7 @@ func (b *Klines) UnmarshalJSON(data []byte) error {
 	b.Volume, err = fasthttp.ParseUfloat(tokens[5])
 	u, err = fasthttp.ParseUint(tokens[6])
 	if err != nil {
-		return errors.New("failed to parse close time")
+		return ErrInvalidJson
 	}
 	b.CloseTime = uint64(u)
 	b.QuoteAssetVolume, err = fasthttp.ParseUfloat(tokens[7])
@@ -354,7 +352,7 @@ type QueryOrder struct {
 	OrigQuoteOrderQty   string      `json:"origQuoteOrderQty"`
 }
 
-// Remark: Either OrderID or OrigOrderiD must be set
+// Remark: Either OrderID or OrigOrderID must be set
 type CancelOrderReq struct {
 	Symbol            string `url:"symbol"`
 	OrderID           int    `url:"orderId,omitempty"`
@@ -457,15 +455,19 @@ type ExchangeInfo struct {
 }
 
 type SymbolInfo struct {
-	Symbol              string             `json:"symbol"`
-	Status              SymbolStatus       `json:"status"`
-	BaseAsset           string             `json:"baseAsset"`
-	BaseAssetPrecision  int                `json:"baseAssetPrecision"`
-	QuoteAsset          string             `json:"quoteAsset"`
-	QuoteAssetPrecision int                `json:"quoteAssetPrecision"`
-	OrderTypes          []OrderType        `json:"orderTypes"`
-	Iceberg             bool               `json:"icebergAllowed"`
-	Filters             []SymbolInfoFilter `json:"filters"`
+	Symbol                   string             `json:"symbol"`
+	Status                   SymbolStatus       `json:"status"`
+	BaseAsset                string             `json:"baseAsset"`
+	BaseAssetPrecision       int                `json:"baseAssetPrecision"`
+	QuoteAsset               string             `json:"quoteAsset"`
+	QuoteAssetPrecision      int                `json:"quoteAssetPrecision"`
+	BaseCommissionPrecision  int                `json:"baseCommissionPrecision"`
+	QuoteCommissionPrecision int                `json:"quoteCommissionPrecision"`
+	OrderTypes               []OrderType        `json:"orderTypes"`
+	IcebergAllowed           bool               `json:"icebergAllowed"`
+	OCOAllowed               bool               `json:"ocoAllowed"`
+	QuoteQtyAllowed          bool               `json:"quoteOrderQtyMarketAllowed"`
+	Filters                  []SymbolInfoFilter `json:"filters"`
 }
 
 type SymbolStatus string

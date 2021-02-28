@@ -1,10 +1,10 @@
 package ws
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
 	"github.com/xenking/binance-api"
 )
 
@@ -14,9 +14,11 @@ type binanceCtx struct {
 }
 
 func newBinanceCtx() *binanceCtx {
+	key := os.Getenv("BINANCE_API_KEY")
+	secret := os.Getenv("BINANCE_API_SECRET")
 	return &binanceCtx{
 		ws:  NewClient(),
-		api: binance.NewClient("", ""),
+		api: binance.NewClient(key, secret),
 	}
 }
 
@@ -47,7 +49,7 @@ func TestClient_Depth_Stream(t *testing.T) {
 func TestClient_Klines_Read(t *testing.T) {
 	const symbol = "ETHBTC"
 	ctx := newBinanceCtx()
-	ws, err := ctx.ws.Klines(symbol, binance.KlineInterval1m)
+	ws, err := ctx.ws.Klines(symbol, binance.KlineInterval1min)
 	defer ws.Close()
 	require.NoError(t, err)
 	u, err := ws.Read()
@@ -58,7 +60,7 @@ func TestClient_Klines_Read(t *testing.T) {
 func TestClient_Klines_Stream(t *testing.T) {
 	const symbol = "ETHBTC"
 	ctx := newBinanceCtx()
-	ws, err := ctx.ws.Klines(symbol, binance.KlineInterval1m)
+	ws, err := ctx.ws.Klines(symbol, binance.KlineInterval1min)
 	defer ws.Close()
 	require.NoError(t, err)
 	for u := range ws.Stream() {

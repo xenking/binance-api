@@ -1,6 +1,7 @@
 package binance
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -43,7 +44,7 @@ func TestClient_AggregatedTrades(t *testing.T) {
 
 func TestClient_Klines(t *testing.T) {
 	ctx := newBinanceCtx()
-	s, e := ctx.api.Klines(&KlinesReq{Symbol: "NEOBTC", Interval: KlineInterval1h, Limit: 5})
+	s, e := ctx.api.Klines(&KlinesReq{Symbol: "NEOBTC", Interval: KlineInterval1hour, Limit: 5})
 	require.NoError(t, e)
 	require.Len(t, s, 5)
 }
@@ -143,7 +144,9 @@ type binanceCtx struct {
 }
 
 func newBinanceCtx() *binanceCtx {
+	key := os.Getenv("BINANCE_API_KEY")
+	secret := os.Getenv("BINANCE_API_SECRET")
 	return &binanceCtx{
-		api: NewClient("", ""),
+		api: NewClient(key, secret),
 	}
 }

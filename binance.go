@@ -54,7 +54,7 @@ func (c *Client) Time() (*ServerTime, error) {
 // Depth retrieves the order book for the given symbol
 func (c *Client) Depth(req *DepthReq) (*Depth, error) {
 	if req == nil {
-		return nil, errors.New(ErrNilRequest)
+		return nil, ErrNilRequest
 	}
 	if req.Limit == 0 || req.Limit > 100 {
 		req.Limit = 100
@@ -70,10 +70,10 @@ func (c *Client) Depth(req *DepthReq) (*Depth, error) {
 // Get trades for a specific account and symbol
 func (c *Client) Trades(req *TradeReq) ([]*Trade, error) {
 	if req == nil {
-		return nil, errors.New(ErrNilRequest)
+		return nil, ErrNilRequest
 	}
 	if req.Symbol == "" {
-		return nil, errors.New(ErrEmptySymbol)
+		return nil, ErrEmptySymbol
 	}
 	if req.Limit < 500 || req.Limit > 1000 {
 		req.Limit = 500
@@ -92,7 +92,7 @@ func (c *Client) Trades(req *TradeReq) ([]*Trade, error) {
 // Remark: If frondId, startTime, and endTime are not sent, the most recent aggregate trades will be returned.
 func (c *Client) AggregatedTrades(req *AggregatedTradeReq) ([]*AggregatedTrade, error) {
 	if req == nil {
-		return nil, errors.New(ErrNilRequest)
+		return nil, ErrNilRequest
 	}
 	if req.Limit < 500 || req.Limit > 1000 {
 		req.Limit = 500
@@ -108,10 +108,13 @@ func (c *Client) AggregatedTrades(req *AggregatedTradeReq) ([]*AggregatedTrade, 
 // Klines returns kline/candlestick bars for a symbol. Klines are uniquely identified by their open time
 func (c *Client) Klines(req *KlinesReq) ([]*Klines, error) {
 	if req == nil {
-		return nil, errors.New(ErrNilRequest)
+		return nil, ErrNilRequest
 	}
-	if req.Symbol == "" || req.Interval == "" {
-		return nil, errors.New("symbol or interval are missing")
+	if req.Symbol == "" {
+		return nil, ErrEmptySymbol
+	}
+	if req.Interval == "" {
+		req.Interval = KlineInterval5min
 	}
 	if req.Limit == 0 || req.Limit > 500 {
 		req.Limit = 500
@@ -138,7 +141,7 @@ func (c *Client) Tickers() ([]*TickerStats, error) {
 // Ticker returns 24 hour price change statistics
 func (c *Client) Ticker(req *TickerReq) (*TickerStats, error) {
 	if req == nil {
-		return nil, errors.New(ErrNilRequest)
+		return nil, ErrNilRequest
 	}
 	res, err := c.c.do(http.MethodGet, EndpointTicker24h, req, false, false)
 	if err != nil {
@@ -151,10 +154,10 @@ func (c *Client) Ticker(req *TickerReq) (*TickerStats, error) {
 // Ticker returns 24 hour price change statistics
 func (c *Client) AvgPrice(req *AvgPriceReq) (*AvgPrice, error) {
 	if req == nil {
-		return nil, errors.New(ErrNilRequest)
+		return nil, ErrNilRequest
 	}
 	if req.Symbol == "" {
-		return nil, errors.New(ErrEmptySymbol)
+		return nil, ErrEmptySymbol
 	}
 	res, err := c.c.do(http.MethodGet, EndpointAvgPrice, req, false, false)
 	if err != nil {
@@ -177,7 +180,7 @@ func (c *Client) Prices() ([]*SymbolPrice, error) {
 // Prices calculates the latest price for all symbols
 func (c *Client) Price(req *TickerPriceReq) (*SymbolPrice, error) {
 	if req == nil {
-		return nil, errors.New(ErrNilRequest)
+		return nil, ErrNilRequest
 	}
 	res, err := c.c.do(http.MethodGet, EndpointTickerPrice, req, false, false)
 	if err != nil {
@@ -200,7 +203,7 @@ func (c *Client) BookTickers() ([]*BookTicker, error) {
 // BookTicker returns best price/qty on the order book for all symbols
 func (c *Client) BookTicker(req *BookTickerReq) (*BookTicker, error) {
 	if req == nil {
-		return nil, errors.New(ErrNilRequest)
+		return nil, ErrNilRequest
 	}
 	res, err := c.c.do(http.MethodGet, EndpointTickerBook, req, false, false)
 	if err != nil {
@@ -215,33 +218,90 @@ func (c *Client) BookTicker(req *BookTickerReq) (*BookTicker, error) {
 // NewOrder sends in a new order
 func (c *Client) NewOrder(req *OrderReq) (*OrderRespAck, error) {
 	if req == nil {
-		return nil, errors.New(ErrNilRequest)
+		return nil, ErrNilRequest
 	}
 	switch req.Type {
 	case OrderTypeLimit:
-		if req.Price <= 0 || req.Quantity <= 0 {
-			return nil, errors.New("empty price or quantity")
+		if len(req.Price) == 0 || len(req.Quantity) == 0 {
+			return nil, ErrEmptyLimit
 		}
 		if req.TimeInForce == "" {
 			req.TimeInForce = TimeInForceGTC
 		}
 	case OrderTypeMarket:
-		if req.Quantity <= 0 && req.QuoteQuantity <= 0 {
-			return nil, errors.New("quantity or quote quantity expected")
+		if len(req.Quantity) == 0 && len(req.QuoteQuantity) == 0 {
+			return nil, ErrEmptyMarket
 		}
 	}
 	res, err := c.c.do(http.MethodPost, EndpointOrder, req, true, false)
 	if err != nil {
 		return nil, err
 	}
+
 	resp := &OrderRespAck{}
+	return resp, json.Unmarshal(res, resp)
+}
+
+// NewOrderResult sends in a new order and return created order
+func (c *Client) NewOrderResult(req *OrderReq) (*OrderRespResult, error) {
+	if req == nil {
+		return nil, ErrNilRequest
+	}
+	switch req.Type {
+	case OrderTypeLimit:
+		if len(req.Price) == 0 || len(req.Quantity) == 0 {
+			return nil, ErrEmptyLimit
+		}
+		if req.TimeInForce == "" {
+			req.TimeInForce = TimeInForceGTC
+		}
+	case OrderTypeMarket:
+		if len(req.Quantity) == 0 && len(req.QuoteQuantity) == 0 {
+			return nil, ErrEmptyMarket
+		}
+	}
+	req.OrderRespType = OrderRespTypeResult
+	res, err := c.c.do(http.MethodPost, EndpointOrder, req, true, false)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &OrderRespResult{}
+	return resp, json.Unmarshal(res, resp)
+}
+
+// NewOrderFull sends in a new order and return created full order info
+func (c *Client) NewOrderFull(req *OrderReq) (*OrderRespFull, error) {
+	if req == nil {
+		return nil, ErrNilRequest
+	}
+	switch req.Type {
+	case OrderTypeLimit:
+		if len(req.Price) == 0 || len(req.Quantity) == 0 {
+			return nil, ErrEmptyLimit
+		}
+		if req.TimeInForce == "" {
+			req.TimeInForce = TimeInForceGTC
+		}
+	case OrderTypeMarket:
+		if len(req.Quantity) == 0 && len(req.QuoteQuantity) == 0 {
+			return nil, ErrEmptyMarket
+		}
+	}
+	req.OrderRespType = OrderRespTypeFull
+	res, err := c.c.do(http.MethodPost, EndpointOrder, req, true, false)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &OrderRespFull{}
 	return resp, json.Unmarshal(res, resp)
 }
 
 // NewOrderTest tests new order creation and signature/recvWindow long. Creates and validates a new order but does not send it into the matching engine
 func (c *Client) NewOrderTest(req *OrderReq) error {
 	if req == nil {
-		return errors.New(ErrNilRequest)
+		return ErrNilRequest
 	}
 	_, err := c.c.do(http.MethodPost, EndpointOrderTest, req, true, false)
 	return err
@@ -250,10 +310,10 @@ func (c *Client) NewOrderTest(req *OrderReq) error {
 // QueryOrder checks an order's status
 func (c *Client) QueryOrder(req *QueryOrderReq) (*QueryOrder, error) {
 	if req == nil {
-		return nil, errors.New(ErrNilRequest)
+		return nil, ErrNilRequest
 	}
 	if req.OrderID < 0 && req.OrigClientOrderId == "" {
-		return nil, errors.New(ErrEmptyOrderID)
+		return nil, ErrEmptyOrderID
 	}
 	res, err := c.c.do(http.MethodGet, EndpointOrder, req, true, false)
 	if err != nil {
@@ -266,10 +326,10 @@ func (c *Client) QueryOrder(req *QueryOrderReq) (*QueryOrder, error) {
 // CancelOrder cancel an active order
 func (c *Client) CancelOrder(req *CancelOrderReq) (*CancelOrder, error) {
 	if req == nil {
-		return nil, errors.New(ErrNilRequest)
+		return nil, ErrNilRequest
 	}
 	if req.OrderID < 0 || (req.OrigClientOrderId == "" && req.NewClientOrderId == "") {
-		return nil, errors.New(ErrEmptyOrderID)
+		return nil, ErrEmptyOrderID
 	}
 	res, err := c.c.do(http.MethodDelete, EndpointOrder, req, true, false)
 	if err != nil {
@@ -282,7 +342,7 @@ func (c *Client) CancelOrder(req *CancelOrderReq) (*CancelOrder, error) {
 // OpenOrders get all open orders on a symbol
 func (c *Client) OpenOrders(req *OpenOrdersReq) ([]*QueryOrder, error) {
 	if req == nil {
-		return nil, errors.New(ErrNilRequest)
+		return nil, ErrNilRequest
 	}
 	res, err := c.c.do(http.MethodGet, EndpointOpenOrders, req, true, false)
 	if err != nil {
@@ -295,7 +355,7 @@ func (c *Client) OpenOrders(req *OpenOrdersReq) ([]*QueryOrder, error) {
 // CancelOpenOrders cancel all open orders on a symbol
 func (c *Client) CancelOpenOrders(req *CancelOpenOrdersReq) ([]*CancelOrder, error) {
 	if req == nil {
-		return nil, errors.New(ErrNilRequest)
+		return nil, ErrNilRequest
 	}
 	res, err := c.c.do(http.MethodDelete, EndpointOpenOrders, req, true, false)
 	if err != nil {
@@ -308,7 +368,7 @@ func (c *Client) CancelOpenOrders(req *CancelOpenOrdersReq) ([]*CancelOrder, err
 // AllOrders get all account orders; active, canceled, or filled
 func (c *Client) AllOrders(req *AllOrdersReq) ([]*QueryOrder, error) {
 	if req == nil {
-		return nil, errors.New(ErrNilRequest)
+		return nil, ErrNilRequest
 	}
 	if req.Limit == 0 {
 		req.Limit = 500
@@ -334,7 +394,7 @@ func (c *Client) Account() (*AccountInfo, error) {
 // AccountTrades get trades for a specific account and symbol
 func (c *Client) AccountTrades(req *AccountTradesReq) (*AccountTrades, error) {
 	if req == nil {
-		return nil, errors.New(ErrNilRequest)
+		return nil, ErrNilRequest
 	}
 	if req.Limit == 0 || req.Limit > 500 {
 		req.Limit = 500
