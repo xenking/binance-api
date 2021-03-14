@@ -93,19 +93,19 @@ type OrderRespAck struct {
 }
 
 type OrderRespResult struct {
-	Symbol              string `json:"symbol"`
-	OrderID             int    `json:"orderId"`
-	OrderListID         int    `json:"orderListId"`
-	ClientOrderID       string `json:"clientOrderId"`
-	TransactTime        int64  `json:"transactTime"`
-	Price               string `json:"price"`
-	OrigQty             string `json:"origQty"`
-	ExecutedQty         string `json:"executedQty"`
-	CummulativeQuoteQty string `json:"cummulativeQuoteQty"`
-	Status              string `json:"status"`
-	TimeInForce         string `json:"timeInForce"`
-	Type                string `json:"type"`
-	Side                string `json:"side"`
+	Symbol              string      `json:"symbol"`
+	OrderID             int         `json:"orderId"`
+	OrderListID         int         `json:"orderListId"`
+	ClientOrderID       string      `json:"clientOrderId"`
+	TransactTime        int64       `json:"transactTime"`
+	Price               string      `json:"price"`
+	OrigQty             string      `json:"origQty"`
+	ExecutedQty         string      `json:"executedQty"`
+	CummulativeQuoteQty string      `json:"cummulativeQuoteQty"`
+	Status              OrderStatus `json:"status"`
+	TimeInForce         string      `json:"timeInForce"`
+	Type                OrderType   `json:"type"`
+	Side                OrderSide   `json:"side"`
 }
 
 type OrderRespFull struct {
@@ -118,10 +118,10 @@ type OrderRespFull struct {
 	OrigQty             string              `json:"origQty"`
 	ExecutedQty         string              `json:"executedQty"`
 	CummulativeQuoteQty string              `json:"cummulativeQuoteQty"`
-	Status              string              `json:"status"`
+	Status              OrderStatus         `json:"status"`
 	TimeInForce         string              `json:"timeInForce"`
-	Type                string              `json:"type"`
-	Side                string              `json:"side"`
+	Type                OrderType           `json:"type"`
+	Side                OrderSide           `json:"side"`
 	Fills               []OrderRespFullFill `json:"fills"`
 }
 
@@ -374,19 +374,19 @@ type CancelOrderReq struct {
 }
 
 type CancelOrder struct {
-	Symbol              string `json:"symbol"`
-	OrigClientOrderID   string `json:"origClientOrderId"`
-	OrderID             int    `json:"orderId"`
-	OrderListID         int    `json:"orderListId"`
-	ClientOrderID       string `json:"clientOrderId"`
-	Price               string `json:"price"`
-	OrigQty             string `json:"origQty"`
-	ExecutedQty         string `json:"executedQty"`
-	CummulativeQuoteQty string `json:"cummulativeQuoteQty"`
-	Status              string `json:"status"`
-	TimeInForce         string `json:"timeInForce"`
-	Type                string `json:"type"`
-	Side                string `json:"side"`
+	Symbol              string      `json:"symbol"`
+	OrigClientOrderID   string      `json:"origClientOrderId"`
+	OrderID             int         `json:"orderId"`
+	OrderListID         int         `json:"orderListId"`
+	ClientOrderID       string      `json:"clientOrderId"`
+	Price               string      `json:"price"`
+	OrigQty             string      `json:"origQty"`
+	ExecutedQty         string      `json:"executedQty"`
+	CummulativeQuoteQty string      `json:"cummulativeQuoteQty"`
+	Status              OrderStatus `json:"status"`
+	TimeInForce         string      `json:"timeInForce"`
+	Type                OrderType   `json:"type"`
+	Side                OrderSide   `json:"side"`
 }
 
 type OpenOrdersReq struct {
