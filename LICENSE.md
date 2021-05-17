@@ -1,7 +1,7 @@
 
 The MIT License (MIT)
 
-Copyright (c) 2020 Vladislav Khutorskoy
+Copyright (c) 2021 Vladislav Khutorskoy
 
 Copyright (c) 2017 Eran Yanay
 
