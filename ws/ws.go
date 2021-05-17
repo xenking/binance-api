@@ -27,13 +27,14 @@ type Depth struct {
 // Read reads a depth update message from depth websocket
 func (d *Depth) Read() (*DepthUpdate, error) {
 	buf := bytebufferpool.Get()
-	defer bytebufferpool.Put(buf)
 	_, data, err := d.conn.ReadMessage(buf.B)
 	if err != nil {
 		return nil, err
 	}
 	r := &DepthUpdate{}
-	return r, json.Unmarshal(data, r)
+	err = json.Unmarshal(data, r)
+	bytebufferpool.Put(buf)
+	return r, err
 }
 
 // Stream stream a depth update message from depth websocket to channel
@@ -71,13 +72,14 @@ type DepthLevel struct {
 // Read reads a depth update message from depth level websocket
 func (d *DepthLevel) Read() (*DepthLevelUpdate, error) {
 	buf := bytebufferpool.Get()
-	defer bytebufferpool.Put(buf)
 	_, data, err := d.conn.ReadMessage(buf.B)
 	if err != nil {
 		return nil, err
 	}
 	r := &DepthLevelUpdate{}
-	return r, json.Unmarshal(data, r)
+	err = json.Unmarshal(data, r)
+	bytebufferpool.Put(buf)
+	return r, err
 }
 
 // Stream stream a depth update message from depth level websocket to channel
@@ -115,13 +117,14 @@ type AllMarketTicker struct {
 // Read reads a market update message from all markets ticker websocket
 func (t *AllMarketTicker) Read() (*AllMarketTickerUpdate, error) {
 	buf := bytebufferpool.Get()
-	defer bytebufferpool.Put(buf)
 	_, data, err := t.conn.ReadMessage(buf.B)
 	if err != nil {
 		return nil, err
 	}
 	r := &AllMarketTickerUpdate{}
-	return r, json.Unmarshal(data, r)
+	err = json.Unmarshal(data, r)
+	bytebufferpool.Put(buf)
+	return r, err
 }
 
 // Stream stream a market update message from all markets ticker websocket to channel
@@ -159,13 +162,14 @@ type IndivTicker struct {
 // Read reads a individual symbol update message from individual ticker websocket
 func (t *IndivTicker) Read() (*IndivTickerUpdate, error) {
 	buf := bytebufferpool.Get()
-	defer bytebufferpool.Put(buf)
 	_, data, err := t.conn.ReadMessage(buf.B)
 	if err != nil {
 		return nil, err
 	}
 	r := &IndivTickerUpdate{}
-	return r, json.Unmarshal(data, r)
+	err = json.Unmarshal(data, r)
+	bytebufferpool.Put(buf)
+	return r, err
 }
 
 // Stream stream a individual update message from individual ticker websocket to channel
@@ -203,13 +207,14 @@ type IndivBookTicker struct {
 // Read reads a individual book symbol update message from individual book ticker websocket
 func (t *IndivBookTicker) Read() (*IndivBookTickerUpdate, error) {
 	buf := bytebufferpool.Get()
-	defer bytebufferpool.Put(buf)
 	_, data, err := t.conn.ReadMessage(buf.B)
 	if err != nil {
 		return nil, err
 	}
 	r := &IndivBookTickerUpdate{}
-	return r, json.Unmarshal(data, r)
+	err = json.Unmarshal(data, r)
+	bytebufferpool.Put(buf)
+	return r, err
 }
 
 // Stream stream a individual book symbol update message from individual book ticker websocket to channel
@@ -247,13 +252,14 @@ type Klines struct {
 // Read reads a klines update message from klines websocket
 func (k *Klines) Read() (*KlinesUpdate, error) {
 	buf := bytebufferpool.Get()
-	defer bytebufferpool.Put(buf)
 	_, data, err := k.conn.ReadMessage(buf.B)
 	if err != nil {
 		return nil, err
 	}
 	r := &KlinesUpdate{}
-	return r, json.Unmarshal(data, r)
+	err = json.Unmarshal(data, r)
+	bytebufferpool.Put(buf)
+	return r, err
 }
 
 // Stream stream a klines update message from klines websocket to channel
@@ -291,13 +297,14 @@ type AggTrades struct {
 // Read reads a trades update message from aggregated trades websocket
 func (t *AggTrades) Read() (*AggTradeUpdate, error) {
 	buf := bytebufferpool.Get()
-	defer bytebufferpool.Put(buf)
 	_, data, err := t.conn.ReadMessage(buf.B)
 	if err != nil {
 		return nil, err
 	}
 	r := &AggTradeUpdate{}
-	return r, json.Unmarshal(data, r)
+	err = json.Unmarshal(data, r)
+	bytebufferpool.Put(buf)
+	return r, err
 }
 
 // Stream stream a trades update message from aggregated trades websocket to channel
@@ -335,13 +342,14 @@ type Trades struct {
 // Read reads a trades update message from trades websocket
 func (t *Trades) Read() (*TradeUpdate, error) {
 	buf := bytebufferpool.Get()
-	defer bytebufferpool.Put(buf)
 	_, data, err := t.conn.ReadMessage(buf.B)
 	if err != nil {
 		return nil, err
 	}
 	r := &TradeUpdate{}
-	return r, json.Unmarshal(data, r)
+	err = json.Unmarshal(data, r)
+	bytebufferpool.Put(buf)
+	return r, err
 }
 
 // Stream stream a trades update message from trades websocket to channel
@@ -387,7 +395,7 @@ func (i *AccountInfo) Read() (UpdateType, interface{}, error) {
 		return UpdateTypeUnknown, nil, err
 	}
 	et := EventTypeUpdate{}
-	if err := json.Unmarshal(data, &et); err != nil {
+	if err = json.Unmarshal(data, &et); err != nil {
 		return UpdateTypeUnknown, nil, err
 	}
 	var resp interface{}
