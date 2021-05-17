@@ -244,6 +244,11 @@ type Klines struct {
 	TakerBuyQuoteAssetVolume decimal.Decimal
 }
 
+var (
+	klinesQuote = []byte(`"`)
+	klinesDelim = []byte(`"`)
+)
+
 // UnmarshalJSON unmarshal the given depth raw data and converts to depth struct
 func (b *Klines) UnmarshalJSON(data []byte) error {
 	if b == nil {
@@ -252,9 +257,9 @@ func (b *Klines) UnmarshalJSON(data []byte) error {
 	if len(data) == 0 {
 		return nil
 	}
-	s := bytes.Replace(data, []byte(`"`), nil, -1)
+	s := bytes.Replace(data, klinesQuote, nil, -1)
 	s = bytes.Trim(s, "[]")
-	tokens := bytes.Split(s, []byte(","))
+	tokens := bytes.Split(s, klinesDelim)
 	if len(tokens) < 11 {
 		return ErrInvalidJson
 	}
