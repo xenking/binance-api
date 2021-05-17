@@ -56,7 +56,7 @@ type IndivTickerUpdate struct {
 // AllMarketTickerUpdate represents incoming ticker websocket feed for all tickers
 type AllMarketTickerUpdate []IndivTickerUpdate
 
-// IndivTickerUpdate represents incoming book ticker websocket feed
+// IndivBookTickerUpdate represents incoming book ticker websocket feed
 type IndivBookTickerUpdate struct {
 	UpdateID int    `json:"u"` // UpdateID to sync up with updateid in /ws/v3/depth
 	Symbol   string `json:"s"` // Symbol represents the symbol related to the update
@@ -66,7 +66,7 @@ type IndivBookTickerUpdate struct {
 	AskQty   string `json:"A"` // AskQty
 }
 
-// AllMarketTickerUpdate represents incoming ticker websocket feed for all book tickers
+// AllBookTickerUpdate represents incoming ticker websocket feed for all book tickers
 type AllBookTickerUpdate []IndivBookTickerUpdate
 
 // DepthUpdate represents the incoming messages for depth websocket updates

@@ -44,7 +44,7 @@ func (c *Client) DepthLevel(symbol, level string, frequency FrequencyType) (*Dep
 	return &DepthLevel{wsClient{conn: conn}}, nil
 }
 
-// AllMarketTicker opens websocket with with single depth summary for all tickers
+// AllMarketTickers opens websocket with with single depth summary for all tickers
 func (c *Client) AllMarketTickers() (*AllMarketTicker, error) {
 	var b strings.Builder
 	b.WriteString(baseWS)

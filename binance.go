@@ -44,6 +44,7 @@ func (c *Client) Time() (*ServerTime, error) {
 }
 
 // Market Data endpoints
+
 // Depth retrieves the order book for the given symbol
 func (c *Client) Depth(req *DepthReq) (*Depth, error) {
 	if req == nil {
@@ -60,7 +61,7 @@ func (c *Client) Depth(req *DepthReq) (*Depth, error) {
 	return depth, json.Unmarshal(res, &depth)
 }
 
-// Get trades for a specific account and symbol
+// Trades get for a specific account and symbol
 func (c *Client) Trades(req *TradeReq) ([]*Trade, error) {
 	if req == nil {
 		return nil, ErrNilRequest
@@ -144,7 +145,7 @@ func (c *Client) Ticker(req *TickerReq) (*TickerStats, error) {
 	return tickerStats, json.Unmarshal(res, tickerStats)
 }
 
-// Ticker returns 24 hour price change statistics
+// AvgPrice returns 24 hour price change statistics
 func (c *Client) AvgPrice(req *AvgPriceReq) (*AvgPrice, error) {
 	if req == nil {
 		return nil, ErrNilRequest
@@ -170,7 +171,7 @@ func (c *Client) Prices() ([]*SymbolPrice, error) {
 	return prices, json.Unmarshal(res, &prices)
 }
 
-// Prices calculates the latest price for all symbols
+// Price calculates the latest price for a symbol
 func (c *Client) Price(req *TickerPriceReq) (*SymbolPrice, error) {
 	if req == nil {
 		return nil, ErrNilRequest
@@ -411,7 +412,7 @@ func (c *Client) ExchangeInfo() (*ExchangeInfo, error) {
 
 // User stream endpoint
 
-// DatastreamReq starts a new user datastream
+// DataStream starts a new user datastream
 func (c *Client) DataStream() (string, error) {
 	res, err := c.c.do(fasthttp.MethodPost, EndpointDataStream, nil, false, true)
 	if err != nil {
