@@ -1,6 +1,12 @@
 package ws
 
-import "github.com/xenking/binance-api"
+import (
+	"bytes"
+
+	"github.com/pkg/errors"
+	
+	"github.com/xenking/binance-api"
+)
 
 type UpdateType string
 
@@ -126,8 +132,23 @@ type AggTradeUpdate struct {
 	Maker                 bool       `json:"m"` // Maker indicates whether buyer is a maker
 }
 
+var (
+	ErrIncorrectEventType = errors.New("cant unmarshal event type")
+)
+
 type EventTypeUpdate struct {
 	EventType UpdateType `json:"e"` // EventType represents the update type
+}
+
+func (e *EventTypeUpdate) UnmarshalJSON(buf []byte) error {
+	start := bytes.IndexByte(buf, ':')
+	end := bytes.IndexByte(buf, ',')
+	if end < start+2 || end-start < 3 {
+		e.EventType = UpdateTypeUnknown
+		return ErrIncorrectEventType
+	}
+	e.EventType = UpdateType(b2s(buf[start+2 : end-1]))
+	return nil
 }
 
 // TradeUpdate represents the incoming messages for trades websocket updates
