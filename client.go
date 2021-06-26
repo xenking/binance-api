@@ -1,12 +1,15 @@
 package binance
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
 	"hash"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/google/go-querystring/query"
@@ -15,34 +18,84 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-func newRestClient(apikey, secret string) *restClient {
+type RestClient interface {
+	Do(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error)
+
+	SetWindow(window int)
+	UsedWeight() map[string]int
+	OrderCount() map[string]int
+	RetryAfter() int
+}
+
+const DefaultResponseWindow = 5000
+
+
+func NewRestClient(key, secret string) RestClient {
 	return &restClient{
-		window: 5000,
-		apikey: apikey,
-		hmac: hmac.New(sha256.New, s2b(secret)),
+		apikey: key,
+		hmac:   hmac.New(sha256.New, s2b(secret)),
 		client: newHTTPClient(),
+		window: DefaultResponseWindow,
 	}
 }
 
-// restClient represents the actual HTTP restClient, that is being used to interact with binance API server
+type RestClientConfig struct {
+	APIKey         string
+	APISecret      string
+	HTTPClient     *fasthttp.HostClient
+	ResponseWindow int
+}
+
+func (c RestClientConfig) defaults() RestClientConfig {
+	if c.HTTPClient == nil {
+		c.HTTPClient = newHTTPClient()
+	}
+	if c.ResponseWindow == 0 {
+		c.ResponseWindow = DefaultResponseWindow
+	}
+	return c
+}
+
+func NewCustomRestClient(config RestClientConfig) RestClient {
+	c := config.defaults()
+	return &restClient{
+		apikey: c.APIKey,
+		hmac:   hmac.New(sha256.New, s2b(c.APISecret)),
+		client: c.HTTPClient,
+		window: c.ResponseWindow,
+	}
+}
+
+// restClient represents the actual HTTP RestClient, that is being used to interact with binance API server
 type restClient struct {
-	apikey string
-	hmac   hash.Hash
-	client *fasthttp.HostClient
-	window int
+	apikey     string
+	hmac       hash.Hash
+	client     *fasthttp.HostClient
+	window     int
+	usedWeight sync.Map
+	orderCount sync.Map
+	retryAfter atomic.Value
 }
 
 const (
-	defaultHeaderJson = "application/json"
-	defaultHeaderForm = "application/x-www-form-urlencoded"
-	defaultSchema     = "https"
+	DefaultSchema  = "https"
+	HeaderTypeJson = "application/json"
+	HeaderTypeForm = "application/x-www-form-urlencoded"
+	HeaderAccept   = "Accept"
+	HeaderApiKey   = "X-MBX-APIKEY"
+)
+
+var (
+	HeaderUsedWeight = []byte("X-Mbx-Used-Weight-")
+	HeaderOrderCount = []byte("X-Mbx-Order-Count-")
+	HeaderRetryAfter = []byte("Retry-After")
 )
 
 // newHTTPClient create fasthttp.HostClient with default settings
 func newHTTPClient() *fasthttp.HostClient {
 	return &fasthttp.HostClient{
 		NoDefaultUserAgentHeader:      true, // Don't send: User-Agent: fasthttp
-		DisableHeaderNamesNormalizing: true,
+		DisableHeaderNamesNormalizing: false,
 		DisablePathNormalizing:        false,
 		IsTLS:                         true,
 		Name:                          DefaultUserAgent,
@@ -50,10 +103,10 @@ func newHTTPClient() *fasthttp.HostClient {
 	}
 }
 
-// do invokes the given API command with the given data
+// Do invokes the given API command with the given data
 // sign indicates whether the api call should be done with signed payload
 // stream indicates if the request is stream related
-func (c *restClient) do(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error) {
+func (c *restClient) Do(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error) {
 	// Convert the given data to urlencoded format
 	values, err := query.Values(data)
 	if err != nil {
@@ -99,24 +152,24 @@ func (c *restClient) do(method, endpoint string, data interface{}, sign bool, st
 	// POST requests payload is given as a body
 	req := fasthttp.AcquireRequest()
 	req.Header.SetHost(BaseHost)
-	req.URI().SetScheme(defaultSchema)
+	req.URI().SetScheme(DefaultSchema)
 	req.Header.SetMethod(method)
 
 	if method == fasthttp.MethodGet {
-		b.Grow(len(pb)+1)
+		b.Grow(len(pb) + 1)
 		b.WriteByte('?')
 		b.Write(pb)
 	} else {
-		req.Header.Add("Content-Type", defaultHeaderForm)
+		req.Header.SetContentType(HeaderTypeForm)
 		req.SetBody(pb)
 	}
 	req.SetRequestURI(b.String())
 
 	if sign || stream {
-		req.Header.Add("X-MBX-APIKEY", c.apikey)
+		req.Header.Add(HeaderApiKey, c.apikey)
 	}
 
-	req.Header.Add("Accept", defaultHeaderJson)
+	req.Header.Add(HeaderAccept, HeaderTypeJson)
 	resp := fasthttp.AcquireResponse()
 
 	if err = c.client.Do(req, resp); err != nil {
@@ -125,11 +178,32 @@ func (c *restClient) do(method, endpoint string, data interface{}, sign bool, st
 	fasthttp.ReleaseRequest(req)
 
 	body := append(resp.Body())
-	status := resp.StatusCode()
 
+	pb = append(pb[:0], resp.Header.Header()...)
+	status := resp.StatusCode()
 	fasthttp.ReleaseResponse(resp)
 
+	if h := getHeader(pb, HeaderUsedWeight); h != nil {
+		interval, val, parseErr := parseInterval(h)
+		if parseErr == nil {
+			c.usedWeight.Store(interval, val)
+		}
+	}
+	if h := getHeader(pb, HeaderOrderCount); h != nil {
+		interval, val, parseErr := parseInterval(h)
+		if parseErr == nil {
+			c.orderCount.Store(interval, val)
+		}
+	}
+
 	if status != fasthttp.StatusOK {
+		if h := getHeader(pb, HeaderRetryAfter); h != nil && len(h) > 2 {
+			retry, parseErr := fasthttp.ParseUint(h[2:])
+			if parseErr == nil {
+				c.retryAfter.Store(retry)
+			}
+		}
+
 		apiErr := &APIError{}
 		if err = json.Unmarshal(body, apiErr); err != nil {
 			return nil, err
@@ -137,4 +211,77 @@ func (c *restClient) do(method, endpoint string, data interface{}, sign bool, st
 		return nil, apiErr
 	}
 	return body, err
+}
+
+func parseInterval(header []byte) (interval string, value int, err error) {
+	parseValue := false
+	for i := 0; i < len(header); i++ {
+		c := header[i]
+		switch {
+		case c == ':', c == ' ':
+			parseValue = true
+			continue
+		case parseValue:
+			value, err = fasthttp.ParseUint(header[i:])
+			return
+		case c >= '0' && c <= '9':
+			continue
+		}
+		interval = string(header[:i+1])
+	}
+	return
+}
+
+func getHeader(header, search []byte) []byte {
+	if header == nil || len(header) == 0 {
+		return nil
+	}
+	if idx := bytes.Index(header, search); idx > 0 {
+		for i := idx + len(search); i < len(header); i++ {
+			if header[i] == '\n' {
+				return header[idx+len(search) : i-1]
+			}
+		}
+	}
+	return nil
+}
+
+// SetWindow to specify response time window in milliseconds
+func (c *restClient) SetWindow(window int) {
+	c.window = window
+}
+
+func (c *restClient) UsedWeight() map[string]int {
+	res := make(map[string]int)
+	c.usedWeight.Range(func(k, v interface{}) bool {
+		key, ok1 := k.(string)
+		value, ok2 := v.(int)
+		if ok1 && ok2 {
+			res[key] = value
+		}
+		return true
+	})
+	return res
+}
+
+func (c *restClient) OrderCount() map[string]int {
+	res := make(map[string]int)
+	c.usedWeight.Range(func(k, v interface{}) bool {
+		key, ok1 := k.(string)
+		value, ok2 := v.(int)
+		if ok1 && ok2 {
+			res[key] = value
+		}
+		return true
+	})
+	return res
+}
+
+func (c *restClient) RetryAfter() int {
+	retry, ok := c.retryAfter.Load().(int)
+	if ok {
+		return retry
+	}
+
+	return 0
 }
