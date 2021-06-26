@@ -512,38 +512,115 @@ type AggregatedTrade struct {
 	BestMatch    bool   `json:"M"` // BestMatch indicates if the trade was at the best price match
 }
 
+type ExchangeInfoReq struct {
+	Symbol string `url:"symbol"`
+}
+
 type ExchangeInfo struct {
-	Symbols []SymbolInfo
+	Timezone        string           `json:"timezone"`
+	ServerTime      uint64           `json:"serverTime"`
+	RateLimits      []RateLimit      `json:"rateLimits"`
+	ExchangeFilters []ExchangeFilter `json:"exchangeFilters"`
+	Symbols         []SymbolInfo     `json:"symbols"`
+}
+
+type RateLimitType string
+
+const (
+	RateLimitTypeRequestWeight RateLimitType = "REQUEST_WEIGHT"
+	RateLimitTypeOrders        RateLimitType = "ORDERS"
+	RateLimitTypeRawRequests   RateLimitType = "RAW_REQUESTS"
+)
+
+type RateLimitInterval string
+
+const (
+	RateLimitIntervalSecond RateLimitInterval = "SECOND"
+	RateLimitIntervalHour   RateLimitInterval = "HOUR"
+	RateLimitIntervalMinute RateLimitInterval = "MINUTE"
+	RateLimitIntervalDay    RateLimitInterval = "DAY"
+)
+
+var RateLimitIntervalLetter = map[byte]RateLimitInterval{
+	's': RateLimitIntervalSecond,
+	'S': RateLimitIntervalSecond,
+	'h': RateLimitIntervalHour,
+	'H': RateLimitIntervalHour,
+	'm': RateLimitIntervalMinute,
+	'M': RateLimitIntervalMinute,
+	'd': RateLimitIntervalDay,
+	'D': RateLimitIntervalDay,
+}
+
+type RateLimit struct {
+	Type        RateLimitType     `json:"rateLimitType"`
+	Interval    RateLimitInterval `json:"interval"`
+	IntervalNum int               `json:"intervalNum"`
+	Limit       int               `json:"limit"`
+}
+
+type ExchangeFilterType string
+
+const (
+	ExchangeFilterTypeMaxNumOrders  ExchangeFilterType = "EXCHANGE_MAX_NUM_ORDERS"
+	ExchangeFilterTypeMaxAlgoOrders ExchangeFilterType = "EXCHANGE_MAX_ALGO_ORDERS"
+)
+
+type ExchangeFilter struct {
+	Type ExchangeFilterType `json:"filterType"`
+
+	// EXCHANGE_MAX_NUM_ORDERS parameters
+	MaxNumOrders int `json:"maxNumOrders"`
+
+	// EXCHANGE_MAX_ALGO_ORDERS parameters
+	MaxNumAlgoOrders int `json:"maxNumAlgoOrders"`
 }
 
 type SymbolInfo struct {
-	Symbol                   string             `json:"symbol"`
-	Status                   SymbolStatus       `json:"status"`
-	BaseAsset                string             `json:"baseAsset"`
-	BaseAssetPrecision       int                `json:"baseAssetPrecision"`
-	QuoteAsset               string             `json:"quoteAsset"`
-	QuoteAssetPrecision      int                `json:"quoteAssetPrecision"`
-	BaseCommissionPrecision  int                `json:"baseCommissionPrecision"`
-	QuoteCommissionPrecision int                `json:"quoteCommissionPrecision"`
-	OrderTypes               []OrderType        `json:"orderTypes"`
-	IcebergAllowed           bool               `json:"icebergAllowed"`
-	OCOAllowed               bool               `json:"ocoAllowed"`
-	QuoteQtyAllowed          bool               `json:"quoteOrderQtyMarketAllowed"`
-	Filters                  []SymbolInfoFilter `json:"filters"`
+	Symbol                     string             `json:"symbol"`
+	Status                     SymbolStatus       `json:"status"`
+	BaseAsset                  string             `json:"baseAsset"`
+	BaseAssetPrecision         int                `json:"baseAssetPrecision"`
+	QuoteAsset                 string             `json:"quoteAsset"`
+	QuotePrecision             int                `json:"quotePrecision"`
+	QuoteAssetPrecision        int                `json:"quoteAssetPrecision"`
+	BaseCommissionPrecision    int                `json:"baseCommissionPrecision"`
+	QuoteCommissionPrecision   int                `json:"quoteCommissionPrecision"`
+	OrderTypes                 []OrderType        `json:"orderTypes"`
+	IcebergAllowed             bool               `json:"icebergAllowed"`
+	OCOAllowed                 bool               `json:"ocoAllowed"`
+	QuoteOrderQtyMarketAllowed bool               `json:"quoteOrderQtyMarketAllowed"`
+	IsSpotTradingAllowed       bool               `json:"isSpotTradingAllowed"`
+	IsMarginTradingAllowed     bool               `json:"isMarginTradingAllowed"`
+	Filters                    []SymbolInfoFilter `json:"filters"`
+	Permissions                []AccountType      `json:"permissions"`
 }
 
 type SymbolStatus string
 
 const (
-	SymbolStatusTrading SymbolStatus = "TRADING"
+	SymbolStatusPreTrading   SymbolStatus = "PRE_TRADING"
+	SymbolStatusTrading      SymbolStatus = "TRADING"
+	SymbolStatusPostTrading  SymbolStatus = "POST_TRADING"
+	SymbolStatusEndOfDay     SymbolStatus = "END_OF_DAY"
+	SymbolStatusHalt         SymbolStatus = "HALT"
+	SymbolStatusAuctionMatch SymbolStatus = "AUCTION_MATCH"
+	SymbolStatusBreak        SymbolStatus = "BREAK"
 )
 
 type FilterType string
 
 const (
-	FilterTypePrice       FilterType = "PRICE_FILTER"
-	FilterTypeLotSize     FilterType = "LOT_SIZE"
-	FilterTypeMinNotional FilterType = "MIN_NOTIONAL"
+	FilterTypePrice               FilterType = "PRICE_FILTER"
+	FilterTypePercentPrice        FilterType = "PERCENT_PRICE"
+	FilterTypeLotSize             FilterType = "LOT_SIZE"
+	FilterTypeMinNotional         FilterType = "MIN_NOTIONAL"
+	FilterTypeIcebergParts        FilterType = "ICEBERG_PARTS"
+	FilterTypeMarketLotSize       FilterType = "MARKET_LOT_SIZE"
+	FilterTypeMaxNumOrders        FilterType = "MAX_NUM_ORDERS"
+	FilterTypeMaxNumAlgoOrders    FilterType = "MAX_NUM_ALGO_ORDERS"
+	FilterTypeMaxNumIcebergOrders FilterType = "MAX_NUM_ICEBERG_ORDERS"
+	FilterTypeMaxPosition         FilterType = "MAX_POSITION"
 )
 
 type SymbolInfoFilter struct {
@@ -554,11 +631,31 @@ type SymbolInfoFilter struct {
 	MaxPrice string `json:"maxPrice"`
 	TickSize string `json:"tickSize"`
 
-	// LOT_SIZE parameters
+	// PERCENT_PRICE parameters
+	MultiplierUp   string `json:"multiplierUp"`
+	MultiplierDown string `json:"multiplierDown"`
+	AvgPriceMins   int    `json:"avgPriceMins"`
+
+	// LOT_SIZE or MARKET_LOT_SIZE parameters
 	MinQty   string `json:"minQty"`
 	MaxQty   string `json:"maxQty"`
 	StepSize string `json:"stepSize"`
 
-	// MIN_NOTIONAL parameters
+	// MIN_NOTIONAL parameter
 	MinNotional string `json:"minNotional"`
+
+	// ICEBERG_PARTS parameter
+	IcebergLimit int `json:"limit"`
+
+	// MAX_NUM_ORDERS parameter
+	MaxNumOrders int `json:"maxNumOrders"`
+
+	// MAX_NUM_ALGO_ORDERS parameter
+	MaxNumAlgoOrders int `json:"maxNumAlgoOrders"`
+
+	// MAX_NUM_ICEBERG_ORDERS parameter
+	MaxNumIcebergOrders int `json:"maxNumIcebergOrders"`
+
+	// MAX_POSITION parameter
+	MaxPosition string `json:"maxPosition"`
 }

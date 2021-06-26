@@ -437,6 +437,18 @@ func (c *Client) ExchangeInfo() (*ExchangeInfo, error) {
 	return resp, json.Unmarshal(res, &resp)
 }
 
+func (c *Client) ExchangeInfoSymbol(req *ExchangeInfoReq) (*ExchangeInfo, error) {
+	if req == nil {
+		return nil, ErrNilRequest
+	}
+	res, err := c.c.Do(fasthttp.MethodGet, EndpointExchangeInfo, req, false, false)
+	if err != nil {
+		return nil, err
+	}
+	resp := &ExchangeInfo{}
+	return resp, json.Unmarshal(res, &resp)
+}
+
 // User stream endpoint
 
 // DataStream starts a new user datastream
