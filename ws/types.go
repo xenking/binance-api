@@ -81,6 +81,22 @@ type IndivBookTickerUpdate struct {
 // AllBookTickerUpdate represents incoming ticker websocket feed for all book tickers
 type AllBookTickerUpdate IndivBookTickerUpdate
 
+// IndivMiniTickerUpdate represents incoming mini-ticker websocket feed
+type IndivMiniTickerUpdate struct {
+	EventType   UpdateType `json:"e"` // EventType represents the update type
+	Time        uint64     `json:"E"` // Time represents the event time
+	Symbol      string     `json:"s"` // Symbol represents the symbol related to the update
+	LastPrice   string     `json:"c"` // Last price
+	OpenPrice   string     `json:"o"` // Open price
+	HighPrice   string     `json:"h"` // High price
+	LowPrice    string     `json:"l"` // Low price
+	VolumeBase  string     `json:"v"` // Total traded base asset volume
+	VolumeQuote string     `json:"q"` // Total traded quote asset volume
+}
+
+// AllMarketMiniTickerUpdate represents incoming mini-ticker websocket feed for all tickers
+type AllMarketMiniTickerUpdate []IndivMiniTickerUpdate
+
 // DepthUpdate represents the incoming messages for depth websocket updates
 type DepthUpdate struct {
 	EventType     UpdateType          `json:"e"` // EventType represents the update type

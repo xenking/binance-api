@@ -195,6 +195,142 @@ func (t *IndivTicker) Stream() <-chan IndivTickerUpdate {
 	return updates
 }
 
+
+// AllMarketMiniTicker is a wrapper for all markets mini-tickers websocket
+type AllMarketMiniTicker struct {
+	wsClient
+}
+
+// Read reads a market update message from all markets mini-ticker websocket
+func (t *AllMarketMiniTicker) Read() (*AllMarketMiniTickerUpdate, error) {
+	buf := bytebufferpool.Get()
+	_, data, err := t.conn.ReadMessage(buf.B)
+	if err != nil {
+		return nil, err
+	}
+	r := &AllMarketMiniTickerUpdate{}
+	err = json.Unmarshal(data, r)
+	bytebufferpool.Put(buf)
+	return r, err
+}
+
+// Stream stream a market update message from all markets mini-ticker websocket to channel
+func (t *AllMarketMiniTicker) Stream() <-chan AllMarketMiniTickerUpdate {
+	updates := make(chan AllMarketMiniTickerUpdate)
+	go func() {
+		defer close(updates)
+		var msg []byte
+		var data []byte
+		var err error
+		for {
+			_, data, err = t.conn.ReadMessage(msg[:0])
+			if err != nil {
+				t.err = err
+				return
+			}
+
+			u := AllMarketMiniTickerUpdate{}
+			err = json.Unmarshal(data, &u)
+			if err != nil {
+				t.err = err
+				return
+			}
+			updates <- u
+		}
+	}()
+	return updates
+}
+
+// IndivMiniTicker is a wrapper for an individual mini-ticker websocket
+type IndivMiniTicker struct {
+	wsClient
+}
+
+// Read reads a individual symbol update message from individual mini-ticker websocket
+func (t *IndivMiniTicker) Read() (*IndivMiniTickerUpdate, error) {
+	buf := bytebufferpool.Get()
+	_, data, err := t.conn.ReadMessage(buf.B)
+	if err != nil {
+		return nil, err
+	}
+	r := &IndivMiniTickerUpdate{}
+	err = json.Unmarshal(data, r)
+	bytebufferpool.Put(buf)
+	return r, err
+}
+
+// Stream stream a individual update message from individual mini-ticker websocket to channel
+func (t *IndivMiniTicker) Stream() <-chan IndivMiniTickerUpdate {
+	updates := make(chan IndivMiniTickerUpdate)
+	go func() {
+		defer close(updates)
+		var msg []byte
+		var data []byte
+		var err error
+		for {
+			_, data, err = t.conn.ReadMessage(msg[:0])
+			if err != nil {
+				t.err = err
+				return
+			}
+
+			u := IndivMiniTickerUpdate{}
+			err = json.Unmarshal(data, &u)
+			if err != nil {
+				t.err = err
+				return
+			}
+			updates <- u
+		}
+	}()
+	return updates
+}
+
+// AllBookTicker is a wrapper for all book tickers websocket
+type AllBookTicker struct {
+	wsClient
+}
+
+// Read reads a book update message from all book tickers websocket
+func (t *AllBookTicker) Read() (*AllBookTickerUpdate, error) {
+	buf := bytebufferpool.Get()
+	_, data, err := t.conn.ReadMessage(buf.B)
+	if err != nil {
+		return nil, err
+	}
+	r := &AllBookTickerUpdate{}
+	err = json.Unmarshal(data, r)
+	bytebufferpool.Put(buf)
+	return r, err
+}
+
+// Stream stream a book update message from all book tickers websocket to channel
+func (t *AllBookTicker) Stream() <-chan AllBookTickerUpdate {
+	updates := make(chan AllBookTickerUpdate)
+	go func() {
+		defer close(updates)
+		var msg []byte
+		var data []byte
+		var err error
+		for {
+			_, data, err = t.conn.ReadMessage(msg[:0])
+			if err != nil {
+				t.err = err
+				return
+			}
+
+			u := AllBookTickerUpdate{}
+			err = json.Unmarshal(data, &u)
+			if err != nil {
+				t.err = err
+				return
+			}
+			updates <- u
+		}
+	}()
+	return updates
+}
+
 // IndivBookTicker is a wrapper for an individual book ticker websocket
 type IndivBookTicker struct {
 	wsClient

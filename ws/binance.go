@@ -80,6 +80,32 @@ func (c *Client) IndivTicker(symbol string) (*IndivTicker, error) {
 	return &IndivTicker{wsClient{conn: conn}}, nil
 }
 
+// AllMarketMiniTickers opens websocket with with single depth summary for all mini-tickers
+func (c *Client) AllMarketMiniTickers() (*AllMarketMiniTicker, error) {
+	var b strings.Builder
+	b.WriteString(c.baseWS)
+	b.WriteString("!miniTicker@arr")
+	conn, err := fastws.Dial(b.String())
+	if err != nil {
+		return nil, err
+	}
+	return &AllMarketMiniTicker{wsClient{conn: conn}}, nil
+}
+
+// IndivMiniTicker opens websocket with with single depth summary for all mini-tickers
+func (c *Client) IndivMiniTicker(symbol string) (*IndivMiniTicker, error) {
+	var b strings.Builder
+	b.WriteString(c.baseWS)
+	b.WriteString(strings.ToLower(symbol))
+	b.WriteString("@miniTicker")
+	conn, err := fastws.Dial(b.String())
+	if err != nil {
+		return nil, err
+	}
+	return &IndivMiniTicker{wsClient{conn: conn}}, nil
+}
+
+
 // AllBookTickers opens websocket with with single depth summary for all tickers
 func (c *Client) AllBookTickers() (*AllBookTicker, error) {
 	var b strings.Builder
