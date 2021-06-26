@@ -4,13 +4,15 @@ import (
 	"bytes"
 
 	"github.com/pkg/errors"
-	
+
 	"github.com/xenking/binance-api"
 )
 
+// UpdateType represents type of account update event
 type UpdateType string
 
 const (
+	// UpdateTypeUnknown default for unknown type
 	UpdateTypeUnknown     UpdateType = "unknown"
 	UpdateTypeDepth       UpdateType = "depthUpdate"
 	UpdateTypeIndivTicker UpdateType = "24hrTicker"
@@ -25,11 +27,15 @@ const (
 	UpdateTypeOCOReport               UpdateType = "listStatus"
 )
 
+// FrequencyType is a interval for Depth update
 type FrequencyType string
 
 const (
+	// Frequency1000ms is default frequency
 	Frequency1000ms = "@1000ms"
-	Frequency100ms  = "@100ms"
+
+	// Frequency100ms for fastest updates
+	Frequency100ms = "@100ms"
 )
 
 // IndivTickerUpdate represents incoming ticker websocket feed
@@ -54,8 +60,8 @@ type IndivTickerUpdate struct {
 	VolumeQuote   string     `json:"q"` // Total traded quote asset volume
 	StatisticOT   uint64     `json:"O"` // Statistics open time
 	StatisticsCT  uint64     `json:"C"` // Statistics close time
-	FirstTradeID  int        `json:"F"` // First trade ID
-	LastTradeID   int        `json:"L"` // Last trade ID
+	FirstTradeID  uint64     `json:"F"` // First trade ID
+	LastTradeID   uint64     `json:"L"` // Last trade ID
 	TotalTrades   int        `json:"n"` // Total number of trades
 }
 
@@ -64,7 +70,7 @@ type AllMarketTickerUpdate []IndivTickerUpdate
 
 // IndivBookTickerUpdate represents incoming book ticker websocket feed
 type IndivBookTickerUpdate struct {
-	UpdateID int    `json:"u"` // UpdateID to sync up with updateid in /ws/v3/depth
+	UpdateID int    `json:"u"` // UpdateID to sync up with updateID in /ws/v3/depth
 	Symbol   string `json:"s"` // Symbol represents the symbol related to the update
 	BidPrice string `json:"b"` // BidPrice
 	BidQty   string `json:"B"` // BidQty
@@ -73,16 +79,17 @@ type IndivBookTickerUpdate struct {
 }
 
 // AllBookTickerUpdate represents incoming ticker websocket feed for all book tickers
-type AllBookTickerUpdate []IndivBookTickerUpdate
+type AllBookTickerUpdate IndivBookTickerUpdate
 
 // DepthUpdate represents the incoming messages for depth websocket updates
 type DepthUpdate struct {
-	EventType UpdateType          `json:"e"` // EventType represents the update type
-	Time      uint64              `json:"E"` // Time represents the event time
-	Symbol    string              `json:"s"` // Symbol represents the symbol related to the update
-	UpdateID  int                 `json:"u"` // UpdateID to sync up with updateid in /ws/v3/depth
-	Bids      []binance.DepthElem `json:"b"` // Bids is a list of bids for symbol
-	Asks      []binance.DepthElem `json:"a"` // Asks is a list of asks for symbol
+	EventType     UpdateType          `json:"e"` // EventType represents the update type
+	Time          uint64              `json:"E"` // Time represents the event time
+	Symbol        string              `json:"s"` // Symbol represents the symbol related to the update
+	FirstUpdateID uint64              `json:"U"` // FirstTradeID in event
+	FinalUpdateID uint64              `json:"u"` // FirstTradeID in event to sync in /ws/v3/depth
+	Bids          []binance.DepthElem `json:"b"` // Bids is a list of bids for symbol
+	Asks          []binance.DepthElem `json:"a"` // Asks is a list of asks for symbol
 }
 
 // DepthLevelUpdate represents the incoming messages for depth level websocket updates
@@ -102,8 +109,8 @@ type KlinesUpdate struct {
 		EndTime      uint64                `json:"T"` // EndTime is the end time of this bar
 		Symbol       string                `json:"s"` // Symbol represents the symbol related to this kline
 		Interval     binance.KlineInterval `json:"i"` // Interval is the kline interval
-		FirstTradeID int                   `json:"f"` // FirstTradeID is the first trade ID
-		LastTradeID  int                   `json:"L"` // LastTradeID is the first trade ID
+		FirstTradeID uint64                `json:"f"` // FirstTradeID is the first trade ID
+		LastTradeID  uint64                `json:"L"` // LastTradeID is the first trade ID
 
 		OpenPrice            string `json:"o"` // OpenPrice represents the open price for this bar
 		ClosePrice           string `json:"c"` // ClosePrice represents the close price for this bar
@@ -123,23 +130,24 @@ type AggTradeUpdate struct {
 	EventType             UpdateType `json:"e"` // EventType represents the update type
 	Time                  uint64     `json:"E"` // Time represents the event time
 	Symbol                string     `json:"s"` // Symbol represents the symbol related to the update
-	TradeID               int        `json:"a"` // TradeID is the aggregated trade ID
+	TradeID               uint64     `json:"a"` // TradeID is the aggregated trade ID
 	Price                 string     `json:"p"` // Price is the trade price
 	Quantity              string     `json:"q"` // Quantity is the trade quantity
-	FirstBreakDownTradeID int        `json:"f"` // FirstBreakDownTradeID is the first breakdown trade ID
-	LastBreakDownTradeID  int        `json:"l"` // LastBreakDownTradeID is the last breakdown trade ID
+	FirstBreakDownTradeID uint64     `json:"f"` // FirstBreakDownTradeID is the first breakdown trade ID
+	LastBreakDownTradeID  uint64     `json:"l"` // LastBreakDownTradeID is the last breakdown trade ID
 	TradeTime             uint64     `json:"T"` // Time is the trade time
 	Maker                 bool       `json:"m"` // Maker indicates whether buyer is a maker
 }
 
-var (
-	ErrIncorrectEventType = errors.New("cant unmarshal event type")
-)
+// ErrIncorrectEventType represents error when event type can't before determined
+var ErrIncorrectEventType = errors.New("cant unmarshal event type")
 
+// EventTypeUpdate represents only incoming event type
 type EventTypeUpdate struct {
 	EventType UpdateType `json:"e"` // EventType represents the update type
 }
 
+// UnmarshalJSON need to getting partial json data
 func (e *EventTypeUpdate) UnmarshalJSON(buf []byte) error {
 	start := bytes.IndexByte(buf, ':')
 	end := bytes.IndexByte(buf, ',')
@@ -156,7 +164,7 @@ type TradeUpdate struct {
 	EventType UpdateType `json:"e"` // EventType represents the update type
 	Time      uint64     `json:"E"` // Time represents the event time
 	Symbol    string     `json:"s"` // Symbol represents the symbol related to the update
-	TradeID   int        `json:"t"` // TradeID is the aggregated trade ID
+	TradeID   uint64     `json:"t"` // TradeID is the aggregated trade ID
 	Price     string     `json:"p"` // Price is the trade price
 	Quantity  string     `json:"q"` // Quantity is the trade quantity
 	BuyerID   int        `json:"b"` // BuyerID is the buyer trade ID
@@ -183,9 +191,11 @@ type AccountInfoUpdate struct {
 	} `json:"B"`
 }
 
+// AccountUpdate represents the incoming messages for account websocket updates
 type AccountUpdate struct {
-	EventType UpdateType `json:"e"` // EventType represents the update type
-	Time      uint64     `json:"E"` // Time represents the event time
+	EventType  UpdateType `json:"e"` // EventType represents the update type
+	Time       uint64     `json:"E"` // Time represents the event time
+	LastUpdate uint64     `json:"u"` // LastUpdate represents last account update
 
 	Balances []*struct {
 		Asset  string `json:"a"`
@@ -194,6 +204,7 @@ type AccountUpdate struct {
 	} `json:"B"`
 }
 
+// BalanceUpdate represents the incoming message for account balances websocket updates
 type BalanceUpdate struct {
 	EventType    UpdateType `json:"e"` // EventType represents the update type
 	Time         uint64     `json:"E"` // Time represents the event time
@@ -220,14 +231,14 @@ type OrderUpdate struct {
 	ExecutionType       binance.OrderStatus  `json:"x"` // ExecutionType represents the execution type for the order
 	Status              binance.OrderStatus  `json:"X"` // Status represents the order status for the order
 	Error               binance.OrderFailure `json:"r"` // Error represents an order rejection reason
-	OrderID             int64                `json:"i"` // OrderID represents the order ID
+	OrderID             uint64               `json:"i"` // OrderID represents the order ID
 	FilledQty           string               `json:"l"` // FilledQty represents the quantity of the last filled trade
 	TotalFilledQty      string               `json:"z"` // TotalFilledQty is the accumulated quantity of filled trades on this order
 	FilledPrice         string               `json:"L"` // FilledPrice is the price of last filled trade
 	Commission          string               `json:"n"` // Commission is the commission for the trade
 	CommissionAsset     string               `json:"N"` // CommissionAsset is the asset on which commission is taken
 	TradeTime           uint64               `json:"T"` // TradeTime is the trade time
-	TradeID             int64                `json:"t"` // TradeID represents the trade ID
+	TradeID             uint64               `json:"t"` // TradeID represents the trade ID
 	Maker               bool                 `json:"m"` // Maker represents whether buyer is maker or not
 	OrderCreatedTime    uint64               `json:"O"` // OrderTime represents the order time
 	QuoteTotalFilledQty string               `json:"Z"`
