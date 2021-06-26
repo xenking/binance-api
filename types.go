@@ -222,6 +222,13 @@ type TradeReq struct {
 	Limit  int    `url:"limit"`  // Limit is the maximal number of elements to receive. Default 500; Max 1000
 }
 
+// HistoricalTradeReq are used to specify symbol to get older trades
+type HistoricalTradeReq struct {
+	Symbol string `url:"symbol"` // Symbol is the symbol to fetch data for
+	Limit  int    `url:"limit"`  // Limit is the maximal number of elements to receive. Default 500; Max 1000
+	FromID int    `url:"fromId"` // FromID is trade ID to fetch from. Default gets most recent trades
+}
+
 type Trade struct {
 	ID           int    `json:"id"`
 	Price        string `json:"price"`

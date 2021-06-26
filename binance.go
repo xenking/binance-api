@@ -88,6 +88,26 @@ func (c *Client) Trades(req *TradeReq) ([]*Trade, error) {
 	return trades, json.Unmarshal(res, &trades)
 }
 
+
+// HistoricalTrades get for a specific symbol started from order id
+func (c *Client) HistoricalTrades(req *HistoricalTradeReq) ([]*Trade, error) {
+	if req == nil {
+		return nil, ErrNilRequest
+	}
+	if req.Symbol == "" {
+		return nil, ErrEmptySymbol
+	}
+	if req.Limit <= 0 || req.Limit > MaxTradesLimit {
+		req.Limit = DefaultTradesLimit
+	}
+	res, err := c.c.Do(fasthttp.MethodGet, EndpointHistoricalTrades, req, false, false)
+	if err != nil {
+		return nil, err
+	}
+	var trades []*Trade
+	return trades, json.Unmarshal(res, &trades)
+}
+
 // AggregatedTrades gets compressed, aggregate trades.
 // AccountTrades that fill at the time, from the same order, with the same price will have the quantity aggregated
 // Remark: If both startTime and endTime are sent, limit should not be sent AND the distance between startTime and endTime must be less than 24 hours.
