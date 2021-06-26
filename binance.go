@@ -22,6 +22,12 @@ func NewClient(apikey, secret string) *Client {
 	}
 }
 
+func NewCustomClient(restClient RestClient) *Client {
+	return &Client{
+		c: restClient,
+	}
+}
+
 func (c *Client) ReqWindow(window int) *Client {
 	c.c.SetWindow(window)
 	return c
