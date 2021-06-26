@@ -58,8 +58,8 @@ func (c *Client) Depth(req *DepthReq) (*Depth, error) {
 	if req == nil {
 		return nil, ErrNilRequest
 	}
-	if req.Limit == 0 || req.Limit > 100 {
-		req.Limit = 100
+	if req.Limit <= 0 || req.Limit > MaxDepthLimit {
+		req.Limit = DefaultDepthLimit
 	}
 	res, err := c.c.Do(fasthttp.MethodGet, EndpointDepth, req, false, false)
 	if err != nil {
@@ -77,8 +77,8 @@ func (c *Client) Trades(req *TradeReq) ([]*Trade, error) {
 	if req.Symbol == "" {
 		return nil, ErrEmptySymbol
 	}
-	if req.Limit < 500 || req.Limit > 1000 {
-		req.Limit = 500
+	if req.Limit <= 0 || req.Limit > MaxTradesLimit {
+		req.Limit = DefaultTradesLimit
 	}
 	res, err := c.c.Do(fasthttp.MethodGet, EndpointTrades, req, false, false)
 	if err != nil {
@@ -96,8 +96,8 @@ func (c *Client) AggregatedTrades(req *AggregatedTradeReq) ([]*AggregatedTrade, 
 	if req == nil {
 		return nil, ErrNilRequest
 	}
-	if req.Limit < 500 || req.Limit > 1000 {
-		req.Limit = 500
+	if req.Limit <= 0 || req.Limit > MaxTradesLimit {
+		req.Limit = DefaultTradesLimit
 	}
 	res, err := c.c.Do(fasthttp.MethodGet, EndpointAggTrades, req, false, false)
 	if err != nil {
@@ -118,8 +118,8 @@ func (c *Client) Klines(req *KlinesReq) ([]*Klines, error) {
 	if req.Interval == "" {
 		req.Interval = KlineInterval5min
 	}
-	if req.Limit == 0 || req.Limit > 500 {
-		req.Limit = 500
+	if req.Limit <= 0 || req.Limit > MaxKlinesLimit {
+		req.Limit = DefaultKlinesLimit
 	}
 	res, err := c.c.Do(fasthttp.MethodGet, EndpointKlines, req, false, false)
 	if err != nil {
@@ -127,7 +127,6 @@ func (c *Client) Klines(req *KlinesReq) ([]*Klines, error) {
 	}
 	var klines []*Klines
 	return klines, json.Unmarshal(res, &klines)
-
 }
 
 // Tickers returns 24 hour price change statistics
@@ -224,14 +223,14 @@ func (c *Client) NewOrder(req *OrderReq) (*OrderRespAck, error) {
 	}
 	switch req.Type {
 	case OrderTypeLimit:
-		if len(req.Price) == 0 || len(req.Quantity) == 0 {
+		if req.Price == "" || req.Quantity == "" {
 			return nil, ErrEmptyLimit
 		}
 		if req.TimeInForce == "" {
 			req.TimeInForce = TimeInForceGTC
 		}
 	case OrderTypeMarket:
-		if len(req.Quantity) == 0 && len(req.QuoteQuantity) == 0 {
+		if req.Quantity == "" && req.QuoteQuantity == "" {
 			return nil, ErrEmptyMarket
 		}
 	}
@@ -251,14 +250,14 @@ func (c *Client) NewOrderResult(req *OrderReq) (*OrderRespResult, error) {
 	}
 	switch req.Type {
 	case OrderTypeLimit:
-		if len(req.Price) == 0 || len(req.Quantity) == 0 {
+		if req.Price == "" || req.Quantity == "" {
 			return nil, ErrEmptyLimit
 		}
 		if req.TimeInForce == "" {
 			req.TimeInForce = TimeInForceGTC
 		}
 	case OrderTypeMarket:
-		if len(req.Quantity) == 0 && len(req.QuoteQuantity) == 0 {
+		if req.Quantity == "" && req.QuoteQuantity == "" {
 			return nil, ErrEmptyMarket
 		}
 	}
@@ -279,14 +278,14 @@ func (c *Client) NewOrderFull(req *OrderReq) (*OrderRespFull, error) {
 	}
 	switch req.Type {
 	case OrderTypeLimit:
-		if len(req.Price) == 0 || len(req.Quantity) == 0 {
+		if req.Price == "" || req.Quantity == "" {
 			return nil, ErrEmptyLimit
 		}
 		if req.TimeInForce == "" {
 			req.TimeInForce = TimeInForceGTC
 		}
 	case OrderTypeMarket:
-		if len(req.Quantity) == 0 && len(req.QuoteQuantity) == 0 {
+		if req.Quantity == "" && req.QuoteQuantity == "" {
 			return nil, ErrEmptyMarket
 		}
 	}
@@ -314,7 +313,7 @@ func (c *Client) QueryOrder(req *QueryOrderReq) (*QueryOrder, error) {
 	if req == nil {
 		return nil, ErrNilRequest
 	}
-	if req.OrderID < 0 && req.OrigClientOrderId == "" {
+	if req.OrderID == 0 && req.OrigClientOrderId == "" {
 		return nil, ErrEmptyOrderID
 	}
 	res, err := c.c.Do(fasthttp.MethodGet, EndpointOrder, req, true, false)
@@ -330,7 +329,7 @@ func (c *Client) CancelOrder(req *CancelOrderReq) (*CancelOrder, error) {
 	if req == nil {
 		return nil, ErrNilRequest
 	}
-	if req.OrderID < 0 || (req.OrigClientOrderId == "" && req.NewClientOrderId == "") {
+	if req.OrderID == 0 && req.OrigClientOrderId == "" {
 		return nil, ErrEmptyOrderID
 	}
 	res, err := c.c.Do(fasthttp.MethodDelete, EndpointOrder, req, true, false)
@@ -372,8 +371,8 @@ func (c *Client) AllOrders(req *AllOrdersReq) ([]*QueryOrder, error) {
 	if req == nil {
 		return nil, ErrNilRequest
 	}
-	if req.Limit == 0 {
-		req.Limit = 500
+	if req.Limit <= 0 || req.Limit > MaxOrderLimit {
+		req.Limit = DefaultOrderLimit
 	}
 	res, err := c.c.Do(fasthttp.MethodGet, EndpointOrdersAll, req, true, false)
 	if err != nil {
@@ -398,8 +397,8 @@ func (c *Client) AccountTrades(req *AccountTradesReq) (*AccountTrades, error) {
 	if req == nil {
 		return nil, ErrNilRequest
 	}
-	if req.Limit == 0 || req.Limit > 500 {
-		req.Limit = 500
+	if req.Limit <= 0 || req.Limit > MaxAccountTradesLimit {
+		req.Limit = MaxAccountTradesLimit
 	}
 	res, err := c.c.Do(fasthttp.MethodGet, EndpointAccountTrades, req, true, false)
 	if err != nil {

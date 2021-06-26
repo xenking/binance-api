@@ -127,7 +127,7 @@ func (s *mockedTestSuite) TestNewOrder() {
 		req := data.(*OrderReq)
 		expected = &OrderRespAck{
 			Symbol:       req.Symbol,
-			OrderID:      rand.Int63(),
+			OrderID:      rand.Uint64(),
 			TransactTime: rand.Uint64(),
 		}
 		return json.Marshal(expected)
@@ -153,7 +153,7 @@ func (s *mockedTestSuite) TestNewOrderResult() {
 		req := data.(*OrderReq)
 		expected = &OrderRespResult{
 			Symbol:              req.Symbol,
-			OrderID:             rand.Int63(),
+			OrderID:             rand.Uint64(),
 			TransactTime:        rand.Uint64(),
 			Price:               req.Price,
 			OrigQty:             req.Quantity,
@@ -186,7 +186,7 @@ func (s *mockedTestSuite) TestNewOrderFull() {
 		req := data.(*OrderReq)
 		expected = &OrderRespFull{
 			Symbol:              req.Symbol,
-			OrderID:             rand.Int63(),
+			OrderID:             rand.Uint64(),
 			TransactTime:        rand.Uint64(),
 			Price:               req.Price,
 			OrigQty:             req.Quantity,
@@ -217,7 +217,7 @@ func (s *mockedTestSuite) TestQueryCancelOrder() {
 		req := data.(*OrderReq)
 		return json.Marshal(&OrderRespAck{
 			Symbol:       req.Symbol,
-			OrderID:      rand.Int63(),
+			OrderID:      rand.Uint64(),
 			TransactTime: rand.Uint64(),
 		})
 	}
@@ -339,7 +339,7 @@ func (s *mockedTestSuite) TestOpenOrders() {
 		req := data.(*OpenOrdersReq)
 		expected = append(expected, &QueryOrder{
 			Symbol:              req.Symbol,
-			OrderID:             rand.Int63(),
+			OrderID:             rand.Uint64(),
 			Price:               "0.1",
 			OrigQty:             "1",
 			ExecutedQty:         "0",
@@ -367,7 +367,7 @@ func (s *mockedTestSuite) TestCancelOpenOrders() {
 		req := data.(*CancelOpenOrdersReq)
 		expected = append(expected, &CancelOrder{
 			Symbol:              req.Symbol,
-			OrderID:             rand.Int63(),
+			OrderID:             rand.Uint64(),
 			Price:               "0.1",
 			OrigQty:             "1",
 			ExecutedQty:         "0",

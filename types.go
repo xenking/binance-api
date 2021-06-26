@@ -2,6 +2,7 @@ package binance
 
 import (
 	"bytes"
+
 	"github.com/valyala/fasthttp"
 	"github.com/xenking/decimal"
 )
@@ -29,8 +30,6 @@ const (
 	OrderStatusPending  OrderStatus = "PENDING_CANCEL"
 	OrderStatusRejected OrderStatus = "REJECTED"
 	OrderStatusExpired  OrderStatus = "EXPIRED"
-	OrderStatusReplaced OrderStatus = "REPLACED"
-	OrderStatusTrade    OrderStatus = "TRADE"
 )
 
 type OrderFailure string
@@ -75,10 +74,10 @@ type OrderReq struct {
 	Symbol           string        `url:"symbol"`
 	Side             OrderSide     `url:"side"`
 	Type             OrderType     `url:"type"`
+	TimeInForce      TimeInForce   `url:"timeInForce"`
 	Quantity         string        `url:"quantity,omitempty"`
 	QuoteQuantity    string        `url:"quoteOrderQty,omitempty"`
 	Price            string        `url:"price,omitempty"`
-	TimeInForce      TimeInForce   `url:"timeInForce"`
 	NewClientOrderId string        `url:"newClientOrderId,omitempty"`
 	StopPrice        string        `url:"stopPrice,omitempty"`
 	IcebergQty       string        `url:"icebergQty,omitempty"`
@@ -86,18 +85,19 @@ type OrderReq struct {
 }
 
 type OrderRespAck struct {
-	Symbol            string `json:"symbol"`
-	OrderID           int    `json:"orderId"`
-	OrigClientOrderID string `json:"origClientOrderId"`
-	TransactTime      uint64 `json:"transactTime"`
+	Symbol        string `json:"symbol"`
+	OrderID       uint64  `json:"orderId"`
+	OrderListID   int    `json:"orderListId"`
+	ClientOrderID string `json:"clientOrderId"`
+	TransactTime  uint64 `json:"transactTime"`
 }
 
 type OrderRespResult struct {
 	Symbol              string      `json:"symbol"`
-	OrderID             int         `json:"orderId"`
+	OrderID             uint64       `json:"orderId"`
 	OrderListID         int         `json:"orderListId"`
 	ClientOrderID       string      `json:"clientOrderId"`
-	TransactTime        int64       `json:"transactTime"`
+	TransactTime        uint64      `json:"transactTime"`
 	Price               string      `json:"price"`
 	OrigQty             string      `json:"origQty"`
 	ExecutedQty         string      `json:"executedQty"`
@@ -110,10 +110,10 @@ type OrderRespResult struct {
 
 type OrderRespFull struct {
 	Symbol              string              `json:"symbol"`
-	OrderID             int                 `json:"orderId"`
-	OrderListID         int                 `json:"orderListId"`
+	OrderID             uint64               `json:"orderId"`
+	OrderListID         int64                 `json:"orderListId"`
 	ClientOrderID       string              `json:"clientOrderId"`
-	TransactTime        int64               `json:"transactTime"`
+	TransactTime        uint64              `json:"transactTime"`
 	Price               string              `json:"price"`
 	OrigQty             string              `json:"origQty"`
 	ExecutedQty         string              `json:"executedQty"`
@@ -156,10 +156,15 @@ const (
 	KlineInterval1month KlineInterval = "1M"
 )
 
+const (
+	DefaultDepthLimit = 100
+	MaxDepthLimit     = 5000
+)
+
 // DepthReq are used to specify symbol to retrieve order book for
 type DepthReq struct {
 	Symbol string `url:"symbol"` // Symbol is the symbol to fetch data for
-	Limit  int    `url:"limit"`  // Limit is the number of order book items to retrieve. Max 100
+	Limit  int    `url:"limit"`  // Limit is the number of order book items to retrieve. Default 100; Max 5000
 }
 
 // DepthElem represents a specific order in the order book
@@ -206,10 +211,15 @@ type Depth struct {
 	Asks         []DepthElem `json:"asks"`
 }
 
+const (
+	DefaultTradesLimit = 500
+	MaxTradesLimit     = 1000
+)
+
 // TradeReq are used to specify symbol to get recent trades
 type TradeReq struct {
 	Symbol string `url:"symbol"` // Symbol is the symbol to fetch data for
-	Limit  int    `url:"limit"`  // Limit is the maximal number of elements to receive. Default 500 Max 1000
+	Limit  int    `url:"limit"`  // Limit is the maximal number of elements to receive. Default 500; Max 1000
 }
 
 type Trade struct {
@@ -222,10 +232,15 @@ type Trade struct {
 	IsBestMatch  bool   `json:"isBestMatch"`
 }
 
+const (
+	DefaultKlinesLimit = 500
+	MaxKlinesLimit     = 1000
+)
+
 type KlinesReq struct {
 	Symbol    string        `url:"symbol"`   // Symbol is the symbol to fetch data for
 	Interval  KlineInterval `url:"interval"` // Interval is the interval for each kline/candlestick
-	Limit     int           `url:"limit"`    // Limit is the maximal number of elements to receive. Max 500
+	Limit     int           `url:"limit"`    // Limit is the maximal number of elements to receive. Default 500; Max 1000
 	StartTime uint64        `url:"startTime,omitempty"`
 	EndTime   uint64        `url:"endTime,omitempty"`
 }
@@ -245,8 +260,9 @@ type Klines struct {
 }
 
 var (
-	klinesQuote = []byte(`"`)
-	klinesDelim = []byte(`"`)
+	klinesQuote  = []byte(`"`)
+	klinesDelim  = []byte(`,`)
+	klinesCutset = "[]"
 )
 
 // UnmarshalJSON unmarshal the given depth raw data and converts to depth struct
@@ -258,7 +274,7 @@ func (b *Klines) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 	s := bytes.Replace(data, klinesQuote, nil, -1)
-	s = bytes.Trim(s, "[]")
+	s = bytes.Trim(s, klinesCutset)
 	tokens := bytes.Split(s, klinesDelim)
 	if len(tokens) < 11 {
 		return ErrInvalidJson
@@ -314,23 +330,24 @@ type TickerReq struct {
 
 // TickerStats is the stats for a specific symbol
 type TickerStats struct {
-	PriceChange           string `json:"priceChange"`
-	PriceChangePercentage string `json:"priceChangePercent"`
-	WeightedAvgPrice      string `json:"weightedAvgPrice"`
-	PrevClosePrice        string `json:"prevClosePrice"`
-	LastPrice             string `json:"lastPrice"`
-	BidPrice              string `json:"bidPrice"`
-	AskPrice              string `json:"askPrice"`
-	OpenPrice             string `json:"openPrice"`
-	HighPrice             string `json:"highPrice"` // HighPrice is 24hr high price
-	LowPrice              string `json:"lowPrice"`  // LowPrice is 24hr low price
-	Volume                string `json:"volume"`
-	QuoteVolume           string `json:"quoteVolume"`
-	OpenTime              uint64 `json:"openTime"`
-	CloseTime             uint64 `json:"closeTime"`
-	FirstID               int    `json:"firstId"`
-	LastID                int    `json:"lastId"`
-	Count                 int    `json:"count"`
+	PriceChange        string `json:"priceChange"`
+	PriceChangePercent string `json:"priceChangePercent"`
+	WeightedAvgPrice   string `json:"weightedAvgPrice"`
+	PrevClosePrice     string `json:"prevClosePrice"`
+	LastPrice          string `json:"lastPrice"`
+	LastQty            string `json:"lastQty"`
+	BidPrice           string `json:"bidPrice"`
+	AskPrice           string `json:"askPrice"`
+	OpenPrice          string `json:"openPrice"`
+	HighPrice          string `json:"highPrice"` // HighPrice is 24hr high price
+	LowPrice           string `json:"lowPrice"`  // LowPrice is 24hr low price
+	Volume             string `json:"volume"`
+	QuoteVolume        string `json:"quoteVolume"`
+	OpenTime           uint64 `json:"openTime"`
+	CloseTime          uint64 `json:"closeTime"`
+	FirstID            int    `json:"firstId"`
+	LastID             int    `json:"lastId"`
+	Count              int    `json:"count"`
 }
 
 type TickerPriceReq struct {
@@ -346,13 +363,13 @@ type SymbolPrice struct {
 // Remark: Either OrderID or OrigOrderiD must be set
 type QueryOrderReq struct {
 	Symbol            string `url:"symbol"`
-	OrderID           int    `url:"orderId,omitempty"`
+	OrderID           uint64  `url:"orderId,omitempty"`
 	OrigClientOrderId string `url:"origClientOrderId,omitempty"`
 }
 
 type QueryOrder struct {
 	Symbol              string      `json:"symbol"`
-	OrderID             int         `json:"orderId"`
+	OrderID             uint64       `json:"orderId"`
 	OrderListID         int         `json:"orderListId"`
 	ClientOrderID       string      `json:"clientOrderId"`
 	Price               string      `json:"price"`
@@ -373,7 +390,7 @@ type QueryOrder struct {
 // Remark: Either OrderID or OrigOrderID must be set
 type CancelOrderReq struct {
 	Symbol            string `url:"symbol"`
-	OrderID           int    `url:"orderId,omitempty"`
+	OrderID           uint64  `url:"orderId,omitempty"`
 	OrigClientOrderId string `url:"origClientOrderId,omitempty"`
 	NewClientOrderId  string `url:"newClientOrderId,omitempty"`
 }
@@ -381,7 +398,7 @@ type CancelOrderReq struct {
 type CancelOrder struct {
 	Symbol              string      `json:"symbol"`
 	OrigClientOrderID   string      `json:"origClientOrderId"`
-	OrderID             int         `json:"orderId"`
+	OrderID             uint64       `json:"orderId"`
 	OrderListID         int         `json:"orderListId"`
 	ClientOrderID       string      `json:"clientOrderId"`
 	Price               string      `json:"price"`
@@ -389,7 +406,7 @@ type CancelOrder struct {
 	ExecutedQty         string      `json:"executedQty"`
 	CummulativeQuoteQty string      `json:"cummulativeQuoteQty"`
 	Status              OrderStatus `json:"status"`
-	TimeInForce         string      `json:"timeInForce"`
+	TimeInForce         TimeInForce `json:"timeInForce"`
 	Type                OrderType   `json:"type"`
 	Side                OrderSide   `json:"side"`
 }
@@ -402,12 +419,19 @@ type CancelOpenOrdersReq struct {
 	Symbol string `url:"symbol"`
 }
 
+const (
+	DefaultOrderLimit = 500
+	MaxOrderLimit     = 1000
+)
+
 // AllOrdersReq represents the request used for querying orders of the given symbol
 // Remark: If orderId is set, it will get orders >= that orderId. Otherwise most recent orders are returned
 type AllOrdersReq struct {
-	Symbol  string `url:"symbol"`  // Symbol is the symbol to fetch orders for
-	OrderID int    `url:"orderId"` // OrderID, if set, will filter all recent orders newer from the given ID
-	Limit   int    `url:"limit"`   // Limit is the maximal number of elements to receive. Max 500
+	Symbol    string `url:"symbol"`            // Symbol is the symbol to fetch orders for
+	OrderID   uint64  `url:"orderId,omitempty"` // OrderID, if set, will filter all recent orders newer from the given ID
+	Limit     int    `url:"limit,omitempty"`   // Limit is the maximal number of elements to receive. Default 500; Max 1000
+	StartTime uint64 `url:"startTime,omitempty"`
+	EndTime   uint64 `url:"endTime,omitempty"`
 }
 
 type Balance struct {
@@ -416,21 +440,34 @@ type Balance struct {
 	Locked string `json:"locked"`
 }
 
+type AccountType string
+
+const (
+	AccountTypeSpot   AccountType = "SPOT"
+	AccountTypeMargin AccountType = "MARGIN"
+)
+
 type AccountInfo struct {
-	MakerCommission  int        `json:"makerCommission"`
-	TakerCommission  int        `json:"takerCommission"`
-	BuyerCommission  int        `json:"buyerCommission"`
-	SellerCommission int        `json:"sellerCommission"`
-	CanTrade         bool       `json:"canTrade"`
-	CanWithdraw      bool       `json:"canWithdraw"`
-	CanDeposit       bool       `json:"canDeposit"`
-	Balances         []*Balance `json:"balances"`
+	MakerCommission  int  `json:"makerCommission"`
+	TakerCommission  int  `json:"takerCommission"`
+	BuyerCommission  int  `json:"buyerCommission"`
+	SellerCommission int  `json:"sellerCommission"`
+	CanTrade         bool `json:"canTrade"`
+	CanWithdraw      bool `json:"canWithdraw"`
+	CanDeposit       bool `json:"canDeposit"`
+	AccountType      AccountType
+	Balances         []*Balance    `json:"balances"`
+	Permissions      []AccountType `json:"permissions"`
 }
 
+const MaxAccountTradesLimit = 500
+
 type AccountTradesReq struct {
-	Symbol string `url:"symbol"`
-	Limit  int    `url:"limit"`  // Limit is the maximal number of elements to receive. Max 500
-	FromID int    `url:"fromId"` // FromID is trade ID to fetch from. Default gets most recent trades
+	Symbol    string `url:"symbol"`
+	Limit     int    `url:"limit,omitempty"`  // Limit is the maximal number of elements to receive. Default 500; Max 1000
+	FromID    int    `url:"fromId,omitempty"` // FromID is trade ID to fetch from. Default gets most recent trades
+	StartTime uint64 `url:"startTime,omitempty"`
+	EndTime   uint64 `url:"endTime,omitempty"`
 }
 
 type AccountTrades struct {
@@ -450,11 +487,11 @@ type DatastreamReq struct {
 }
 
 type AggregatedTradeReq struct {
-	Symbol    string `url:"symbol"` // Symbol is the symbol to fetch data for
-	FromID    int    `url:"fromId"` // FromID to get aggregate trades from INCLUSIVE.
-	Limit     int    `url:"limit"`  // Limit is the maximal number of elements to receive. Max 500
-	StartTime uint64 `url:"startTime,omitempty"`
-	EndTime   uint64 `url:"endTime,omitempty"`
+	Symbol    string `url:"symbol"`              // Symbol is the symbol to fetch data for
+	FromID    int    `url:"fromId"`              // FromID to get aggregate trades from INCLUSIVE.
+	Limit     int    `url:"limit"`               // Limit is the maximal number of elements to receive. Default 500; Max 1000
+	StartTime uint64 `url:"startTime,omitempty"` // StartTime timestamp in ms to get aggregate trades from INCLUSIVE.
+	EndTime   uint64 `url:"endTime,omitempty"`   // EndTime timestamp in ms to get aggregate trades until INCLUSIVE.
 }
 
 type AggregatedTrade struct {
