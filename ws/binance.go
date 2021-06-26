@@ -7,18 +7,29 @@ import (
 	"github.com/xenking/fastws"
 )
 
+const (
+	BaseWS = "wss://stream.binance.com:9443/ws/"
+)
+
 type Client struct {
-	conn *fastws.Conn
+	conn   *fastws.Conn
+	baseWS string
 }
 
 func NewClient() *Client {
-	return &Client{}
+	return &Client{
+		baseWS: BaseWS,
+	}
+}
+
+func NewCustomClient(baseWS string) *Client {
+	return &Client{baseWS: baseWS}
 }
 
 // Depth opens websocket with depth updates for the given symbol (eg @100ms frequency)
 func (c *Client) Depth(symbol string, frequency FrequencyType) (*Depth, error) {
 	var b strings.Builder
-	b.WriteString(baseWS)
+	b.WriteString(c.baseWS)
 	b.WriteString(strings.ToLower(symbol))
 	b.WriteString("@depth")
 	b.WriteString(string(frequency))
@@ -32,7 +43,7 @@ func (c *Client) Depth(symbol string, frequency FrequencyType) (*Depth, error) {
 // DepthLevel opens websocket with depth updates for the given symbol (eg @100ms frequency)
 func (c *Client) DepthLevel(symbol, level string, frequency FrequencyType) (*DepthLevel, error) {
 	var b strings.Builder
-	b.WriteString(baseWS)
+	b.WriteString(c.baseWS)
 	b.WriteString(strings.ToLower(symbol))
 	b.WriteString("@depth")
 	b.WriteString(level)
@@ -47,7 +58,7 @@ func (c *Client) DepthLevel(symbol, level string, frequency FrequencyType) (*Dep
 // AllMarketTickers opens websocket with with single depth summary for all tickers
 func (c *Client) AllMarketTickers() (*AllMarketTicker, error) {
 	var b strings.Builder
-	b.WriteString(baseWS)
+	b.WriteString(c.baseWS)
 	b.WriteString("!ticker@arr")
 	conn, err := fastws.Dial(b.String())
 	if err != nil {
@@ -59,7 +70,7 @@ func (c *Client) AllMarketTickers() (*AllMarketTicker, error) {
 // IndivTicker opens websocket with with single depth summary for all tickers
 func (c *Client) IndivTicker(symbol string) (*IndivTicker, error) {
 	var b strings.Builder
-	b.WriteString(baseWS)
+	b.WriteString(c.baseWS)
 	b.WriteString(strings.ToLower(symbol))
 	b.WriteString("@ticker")
 	conn, err := fastws.Dial(b.String())
@@ -70,21 +81,21 @@ func (c *Client) IndivTicker(symbol string) (*IndivTicker, error) {
 }
 
 // AllBookTickers opens websocket with with single depth summary for all tickers
-func (c *Client) AllBookTickers() (*AllMarketTicker, error) {
+func (c *Client) AllBookTickers() (*AllBookTicker, error) {
 	var b strings.Builder
-	b.WriteString(baseWS)
+	b.WriteString(c.baseWS)
 	b.WriteString("!bookTicker")
 	conn, err := fastws.Dial(b.String())
 	if err != nil {
 		return nil, err
 	}
-	return &AllMarketTicker{wsClient{conn: conn}}, nil
+	return &AllBookTicker{wsClient{conn: conn}}, nil
 }
 
 // IndivBookTicker opens websocket with book ticker best bid or ask updates for the given symbol
 func (c *Client) IndivBookTicker(symbol string) (*IndivBookTicker, error) {
 	var b strings.Builder
-	b.WriteString(baseWS)
+	b.WriteString(c.baseWS)
 	b.WriteString(strings.ToLower(symbol))
 	b.WriteString("@bookTicker")
 	conn, err := fastws.Dial(b.String())
@@ -97,7 +108,7 @@ func (c *Client) IndivBookTicker(symbol string) (*IndivBookTicker, error) {
 // Klines opens websocket with klines updates for the given symbol with the given interval
 func (c *Client) Klines(symbol string, interval binance.KlineInterval) (*Klines, error) {
 	var b strings.Builder
-	b.WriteString(baseWS)
+	b.WriteString(c.baseWS)
 	b.WriteString(strings.ToLower(symbol))
 	b.WriteString("@kline_")
 	b.WriteString(string(interval))
@@ -111,7 +122,7 @@ func (c *Client) Klines(symbol string, interval binance.KlineInterval) (*Klines,
 // AggTrades opens websocket with aggregated trades updates for the given symbol
 func (c *Client) AggTrades(symbol string) (*AggTrades, error) {
 	var b strings.Builder
-	b.WriteString(baseWS)
+	b.WriteString(c.baseWS)
 	b.WriteString(strings.ToLower(symbol))
 	b.WriteString("@aggTrade")
 	conn, err := fastws.Dial(b.String())
@@ -124,7 +135,7 @@ func (c *Client) AggTrades(symbol string) (*AggTrades, error) {
 // Trades opens websocket with trades updates for the given symbol
 func (c *Client) Trades(symbol string) (*Trades, error) {
 	var b strings.Builder
-	b.WriteString(baseWS)
+	b.WriteString(c.baseWS)
 	b.WriteString(strings.ToLower(symbol))
 	b.WriteString("@trade")
 	conn, err := fastws.Dial(b.String())
@@ -137,7 +148,7 @@ func (c *Client) Trades(symbol string) (*Trades, error) {
 // AccountInfo opens websocket with account info updates
 func (c *Client) AccountInfo(listenKey string) (*AccountInfo, error) {
 	var b strings.Builder
-	b.WriteString(baseWS)
+	b.WriteString(c.baseWS)
 	b.WriteString(listenKey)
 	conn, err := fastws.Dial(b.String())
 	if err != nil {

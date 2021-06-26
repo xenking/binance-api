@@ -6,10 +6,6 @@ import (
 	"github.com/xenking/fastws"
 )
 
-const (
-	baseWS = "wss://stream.binance.com:9443/ws/"
-)
-
 type wsClient struct {
 	conn *fastws.Conn
 	err  error
