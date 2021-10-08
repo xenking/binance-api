@@ -1,15 +1,16 @@
 package ws
 
 import (
-	"github.com/segmentio/encoding/json"
-	"github.com/xenking/fastws"
 	"math/rand"
 	"net"
 	"net/http"
 	"testing"
 	"time"
 
+	"github.com/segmentio/encoding/json"
 	"github.com/stretchr/testify/suite"
+	"github.com/xenking/fastws"
+
 	"github.com/xenking/binance-api"
 )
 
@@ -319,7 +320,6 @@ func (s *mockedTestSuite) SetupSuite() {
 }
 
 func (s *mockedTestSuite) SetupTest() {
-
 }
 
 func (s *mockedTestSuite) TestAccountInfo_Read() {
@@ -367,7 +367,6 @@ func (s *mockedTestSuite) TestAccountInfo_Read() {
 	ws, err := s.ws.AccountInfo(key)
 	s.Require().NoError(err)
 
-
 	updateType, actual, err := ws.Read()
 	s.Require().NoError(err)
 	s.Require().Equal(UpdateTypeBalanceUpdate, updateType)
@@ -379,7 +378,6 @@ func (s *mockedTestSuite) TestAccountInfo_Read() {
 	s.Require().NoError(err)
 	err = ln.Close()
 	s.Require().NoError(err)
-
 
 	select {
 	case <-ch:

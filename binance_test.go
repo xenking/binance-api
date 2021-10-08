@@ -1,10 +1,10 @@
 package binance
 
 import (
-	"github.com/segmentio/encoding/json"
 	"math/rand"
 	"testing"
 
+	"github.com/segmentio/encoding/json"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -143,7 +143,6 @@ func (s *mockedTestSuite) TestNewOrder() {
 	})
 	s.Require().NoError(e)
 	s.Require().EqualValues(expected, actual)
-
 }
 
 func (s *mockedTestSuite) TestNewOrderResult() {
@@ -283,7 +282,6 @@ func (s *mockedTestSuite) TestQueryCancelOrder() {
 	})
 	s.Require().NoError(e)
 	s.Require().EqualValues(expectedCancel, actualCancel)
-
 }
 
 func (s *mockedTestSuite) TestDataStream() {

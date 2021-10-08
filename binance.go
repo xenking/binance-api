@@ -88,7 +88,6 @@ func (c *Client) Trades(req *TradeReq) ([]*Trade, error) {
 	return trades, json.Unmarshal(res, &trades)
 }
 
-
 // HistoricalTrades get for a specific symbol started from order id
 func (c *Client) HistoricalTrades(req *HistoricalTradeReq) ([]*Trade, error) {
 	if req == nil {

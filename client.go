@@ -14,8 +14,8 @@ import (
 
 	"github.com/google/go-querystring/query"
 	"github.com/segmentio/encoding/json"
-	"github.com/valyala/bytebufferpool"
 	"github.com/valyala/fasthttp"
+	"github.com/xenking/bytebufferpool"
 )
 
 type RestClient interface {
@@ -28,7 +28,6 @@ type RestClient interface {
 }
 
 const DefaultResponseWindow = 5000
-
 
 func NewRestClient(key, secret string) RestClient {
 	return &restClient{

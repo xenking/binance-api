@@ -3,8 +3,9 @@ package ws
 import (
 	"strings"
 
-	"github.com/xenking/binance-api"
 	"github.com/xenking/fastws"
+
+	"github.com/xenking/binance-api"
 )
 
 const (
@@ -104,7 +105,6 @@ func (c *Client) IndivMiniTicker(symbol string) (*IndivMiniTicker, error) {
 	}
 	return &IndivMiniTicker{wsClient{conn: conn}}, nil
 }
-
 
 // AllBookTickers opens websocket with with single depth summary for all tickers
 func (c *Client) AllBookTickers() (*AllBookTicker, error) {

@@ -2,7 +2,7 @@ package ws
 
 import (
 	"github.com/segmentio/encoding/json"
-	"github.com/valyala/bytebufferpool"
+	"github.com/xenking/bytebufferpool"
 	"github.com/xenking/fastws"
 )
 
@@ -194,7 +194,6 @@ func (t *IndivTicker) Stream() <-chan IndivTickerUpdate {
 	}()
 	return updates
 }
-
 
 // AllMarketMiniTicker is a wrapper for all markets mini-tickers websocket
 type AllMarketMiniTicker struct {

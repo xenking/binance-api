@@ -86,7 +86,7 @@ type OrderReq struct {
 
 type OrderRespAck struct {
 	Symbol        string `json:"symbol"`
-	OrderID       uint64  `json:"orderId"`
+	OrderID       uint64 `json:"orderId"`
 	OrderListID   int    `json:"orderListId"`
 	ClientOrderID string `json:"clientOrderId"`
 	TransactTime  uint64 `json:"transactTime"`
@@ -94,7 +94,7 @@ type OrderRespAck struct {
 
 type OrderRespResult struct {
 	Symbol              string      `json:"symbol"`
-	OrderID             uint64       `json:"orderId"`
+	OrderID             uint64      `json:"orderId"`
 	OrderListID         int         `json:"orderListId"`
 	ClientOrderID       string      `json:"clientOrderId"`
 	TransactTime        uint64      `json:"transactTime"`
@@ -110,8 +110,8 @@ type OrderRespResult struct {
 
 type OrderRespFull struct {
 	Symbol              string              `json:"symbol"`
-	OrderID             uint64               `json:"orderId"`
-	OrderListID         int64                 `json:"orderListId"`
+	OrderID             uint64              `json:"orderId"`
+	OrderListID         int64               `json:"orderListId"`
 	ClientOrderID       string              `json:"clientOrderId"`
 	TransactTime        uint64              `json:"transactTime"`
 	Price               string              `json:"price"`
@@ -370,13 +370,13 @@ type SymbolPrice struct {
 // Remark: Either OrderID or OrigOrderiD must be set
 type QueryOrderReq struct {
 	Symbol            string `url:"symbol"`
-	OrderID           uint64  `url:"orderId,omitempty"`
+	OrderID           uint64 `url:"orderId,omitempty"`
 	OrigClientOrderId string `url:"origClientOrderId,omitempty"`
 }
 
 type QueryOrder struct {
 	Symbol              string      `json:"symbol"`
-	OrderID             uint64       `json:"orderId"`
+	OrderID             uint64      `json:"orderId"`
 	OrderListID         int         `json:"orderListId"`
 	ClientOrderID       string      `json:"clientOrderId"`
 	Price               string      `json:"price"`
@@ -397,7 +397,7 @@ type QueryOrder struct {
 // Remark: Either OrderID or OrigOrderID must be set
 type CancelOrderReq struct {
 	Symbol            string `url:"symbol"`
-	OrderID           uint64  `url:"orderId,omitempty"`
+	OrderID           uint64 `url:"orderId,omitempty"`
 	OrigClientOrderId string `url:"origClientOrderId,omitempty"`
 	NewClientOrderId  string `url:"newClientOrderId,omitempty"`
 }
@@ -405,7 +405,7 @@ type CancelOrderReq struct {
 type CancelOrder struct {
 	Symbol              string      `json:"symbol"`
 	OrigClientOrderID   string      `json:"origClientOrderId"`
-	OrderID             uint64       `json:"orderId"`
+	OrderID             uint64      `json:"orderId"`
 	OrderListID         int         `json:"orderListId"`
 	ClientOrderID       string      `json:"clientOrderId"`
 	Price               string      `json:"price"`
@@ -435,7 +435,7 @@ const (
 // Remark: If orderId is set, it will get orders >= that orderId. Otherwise most recent orders are returned
 type AllOrdersReq struct {
 	Symbol    string `url:"symbol"`            // Symbol is the symbol to fetch orders for
-	OrderID   uint64  `url:"orderId,omitempty"` // OrderID, if set, will filter all recent orders newer from the given ID
+	OrderID   uint64 `url:"orderId,omitempty"` // OrderID, if set, will filter all recent orders newer from the given ID
 	Limit     int    `url:"limit,omitempty"`   // Limit is the maximal number of elements to receive. Default 500; Max 1000
 	StartTime uint64 `url:"startTime,omitempty"`
 	EndTime   uint64 `url:"endTime,omitempty"`
