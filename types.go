@@ -74,7 +74,7 @@ type OrderReq struct {
 	Symbol           string        `url:"symbol"`
 	Side             OrderSide     `url:"side"`
 	Type             OrderType     `url:"type"`
-	TimeInForce      TimeInForce   `url:"timeInForce"`
+	TimeInForce      TimeInForce   `url:"timeInForce,omitempty"`
 	Quantity         string        `url:"quantity,omitempty"`
 	QuoteQuantity    string        `url:"quoteOrderQty,omitempty"`
 	Price            string        `url:"price,omitempty"`
