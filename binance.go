@@ -30,6 +30,7 @@ func NewCustomClient(restClient RestClient) *Client {
 
 func (c *Client) ReqWindow(window int) *Client {
 	c.c.SetWindow(window)
+
 	return c
 }
 
@@ -38,6 +39,7 @@ func (c *Client) ReqWindow(window int) *Client {
 // Ping tests connectivity to the Rest API
 func (c *Client) Ping() error {
 	_, err := c.c.Do(fasthttp.MethodGet, EndpointPing, nil, false, false)
+
 	return err
 }
 
@@ -48,7 +50,9 @@ func (c *Client) Time() (*ServerTime, error) {
 		return nil, err
 	}
 	serverTime := &ServerTime{}
-	return serverTime, json.Unmarshal(res, serverTime)
+	err = json.Unmarshal(res, serverTime)
+
+	return serverTime, err
 }
 
 // Market Data endpoints
@@ -66,7 +70,9 @@ func (c *Client) Depth(req *DepthReq) (*Depth, error) {
 		return nil, err
 	}
 	depth := &Depth{}
-	return depth, json.Unmarshal(res, &depth)
+	err = json.Unmarshal(res, &depth)
+
+	return depth, err
 }
 
 // Trades get for a specific account and symbol
@@ -85,7 +91,9 @@ func (c *Client) Trades(req *TradeReq) ([]*Trade, error) {
 		return nil, err
 	}
 	var trades []*Trade
-	return trades, json.Unmarshal(res, &trades)
+	err = json.Unmarshal(res, &trades)
+
+	return trades, err
 }
 
 // HistoricalTrades get for a specific symbol started from order id
@@ -104,7 +112,9 @@ func (c *Client) HistoricalTrades(req *HistoricalTradeReq) ([]*Trade, error) {
 		return nil, err
 	}
 	var trades []*Trade
-	return trades, json.Unmarshal(res, &trades)
+	err = json.Unmarshal(res, &trades)
+
+	return trades, err
 }
 
 // AggregatedTrades gets compressed, aggregate trades.
@@ -123,7 +133,9 @@ func (c *Client) AggregatedTrades(req *AggregatedTradeReq) ([]*AggregatedTrade, 
 		return nil, err
 	}
 	var trades []*AggregatedTrade
-	return trades, json.Unmarshal(res, &trades)
+	err = json.Unmarshal(res, &trades)
+
+	return trades, err
 }
 
 // Klines returns kline/candlestick bars for a symbol. Klines are uniquely identified by their open time
@@ -145,7 +157,9 @@ func (c *Client) Klines(req *KlinesReq) ([]*Klines, error) {
 		return nil, err
 	}
 	var klines []*Klines
-	return klines, json.Unmarshal(res, &klines)
+	err = json.Unmarshal(res, &klines)
+
+	return klines, err
 }
 
 // Tickers returns 24 hour price change statistics
@@ -155,7 +169,9 @@ func (c *Client) Tickers() ([]*TickerStats, error) {
 		return nil, err
 	}
 	var tickerStats []*TickerStats
-	return tickerStats, json.Unmarshal(res, &tickerStats)
+	err = json.Unmarshal(res, &tickerStats)
+
+	return tickerStats, err
 }
 
 // Ticker returns 24 hour price change statistics
@@ -168,7 +184,9 @@ func (c *Client) Ticker(req *TickerReq) (*TickerStats, error) {
 		return nil, err
 	}
 	tickerStats := &TickerStats{}
-	return tickerStats, json.Unmarshal(res, tickerStats)
+	err = json.Unmarshal(res, tickerStats)
+
+	return tickerStats, err
 }
 
 // AvgPrice returns 24 hour price change statistics
@@ -184,7 +202,9 @@ func (c *Client) AvgPrice(req *AvgPriceReq) (*AvgPrice, error) {
 		return nil, err
 	}
 	price := &AvgPrice{}
-	return price, json.Unmarshal(res, price)
+	err = json.Unmarshal(res, price)
+
+	return price, err
 }
 
 // Prices calculates the latest price for all symbols
@@ -194,7 +214,9 @@ func (c *Client) Prices() ([]*SymbolPrice, error) {
 		return nil, err
 	}
 	var prices []*SymbolPrice
-	return prices, json.Unmarshal(res, &prices)
+	err = json.Unmarshal(res, &prices)
+
+	return prices, err
 }
 
 // Price calculates the latest price for a symbol
@@ -207,7 +229,9 @@ func (c *Client) Price(req *TickerPriceReq) (*SymbolPrice, error) {
 		return nil, err
 	}
 	price := &SymbolPrice{}
-	return price, json.Unmarshal(res, price)
+	err = json.Unmarshal(res, price)
+
+	return price, err
 }
 
 // BookTickers returns best price/qty on the order book for all symbols
@@ -217,7 +241,9 @@ func (c *Client) BookTickers() ([]*BookTicker, error) {
 		return nil, err
 	}
 	var resp []*BookTicker
-	return resp, json.Unmarshal(res, &resp)
+	err = json.Unmarshal(res, &resp)
+
+	return resp, err
 }
 
 // BookTicker returns best price/qty on the order book for all symbols
@@ -230,7 +256,9 @@ func (c *Client) BookTicker(req *BookTickerReq) (*BookTicker, error) {
 		return nil, err
 	}
 	resp := &BookTicker{}
-	return resp, json.Unmarshal(res, &resp)
+	err = json.Unmarshal(res, &resp)
+
+	return resp, err
 }
 
 // Signed endpoints, associated with an account
@@ -240,7 +268,7 @@ func (c *Client) NewOrder(req *OrderReq) (*OrderRespAck, error) {
 	if req == nil {
 		return nil, ErrNilRequest
 	}
-	switch req.Type {
+	switch req.Type { //nolint:exhaustive
 	case OrderTypeLimit:
 		if req.Price == "" || req.Quantity == "" {
 			return nil, ErrEmptyLimit
@@ -259,7 +287,9 @@ func (c *Client) NewOrder(req *OrderReq) (*OrderRespAck, error) {
 	}
 
 	resp := &OrderRespAck{}
-	return resp, json.Unmarshal(res, resp)
+	err = json.Unmarshal(res, resp)
+
+	return resp, err
 }
 
 // NewOrderResult sends in a new order and return created order
@@ -267,7 +297,7 @@ func (c *Client) NewOrderResult(req *OrderReq) (*OrderRespResult, error) {
 	if req == nil {
 		return nil, ErrNilRequest
 	}
-	switch req.Type {
+	switch req.Type { //nolint:exhaustive
 	case OrderTypeLimit:
 		if req.Price == "" || req.Quantity == "" {
 			return nil, ErrEmptyLimit
@@ -287,7 +317,9 @@ func (c *Client) NewOrderResult(req *OrderReq) (*OrderRespResult, error) {
 	}
 
 	resp := &OrderRespResult{}
-	return resp, json.Unmarshal(res, resp)
+	err = json.Unmarshal(res, resp)
+
+	return resp, err
 }
 
 // NewOrderFull sends in a new order and return created full order info
@@ -295,7 +327,7 @@ func (c *Client) NewOrderFull(req *OrderReq) (*OrderRespFull, error) {
 	if req == nil {
 		return nil, ErrNilRequest
 	}
-	switch req.Type {
+	switch req.Type { //nolint:exhaustive
 	case OrderTypeLimit:
 		if req.Price == "" || req.Quantity == "" {
 			return nil, ErrEmptyLimit
@@ -315,7 +347,9 @@ func (c *Client) NewOrderFull(req *OrderReq) (*OrderRespFull, error) {
 	}
 
 	resp := &OrderRespFull{}
-	return resp, json.Unmarshal(res, resp)
+	err = json.Unmarshal(res, resp)
+
+	return resp, err
 }
 
 // NewOrderTest tests new order creation and signature/recvWindow long. Creates and validates a new order but does not send it into the matching engine
@@ -324,6 +358,7 @@ func (c *Client) NewOrderTest(req *OrderReq) error {
 		return ErrNilRequest
 	}
 	_, err := c.c.Do(fasthttp.MethodPost, EndpointOrderTest, req, true, false)
+
 	return err
 }
 
@@ -332,7 +367,7 @@ func (c *Client) QueryOrder(req *QueryOrderReq) (*QueryOrder, error) {
 	if req == nil {
 		return nil, ErrNilRequest
 	}
-	if req.OrderID == 0 && req.OrigClientOrderId == "" {
+	if req.OrderID == 0 && req.OrigClientOrderID == "" {
 		return nil, ErrEmptyOrderID
 	}
 	res, err := c.c.Do(fasthttp.MethodGet, EndpointOrder, req, true, false)
@@ -340,7 +375,9 @@ func (c *Client) QueryOrder(req *QueryOrderReq) (*QueryOrder, error) {
 		return nil, err
 	}
 	resp := &QueryOrder{}
-	return resp, json.Unmarshal(res, resp)
+	err = json.Unmarshal(res, resp)
+
+	return resp, err
 }
 
 // CancelOrder cancel an active order
@@ -348,7 +385,7 @@ func (c *Client) CancelOrder(req *CancelOrderReq) (*CancelOrder, error) {
 	if req == nil {
 		return nil, ErrNilRequest
 	}
-	if req.OrderID == 0 && req.OrigClientOrderId == "" {
+	if req.OrderID == 0 && req.OrigClientOrderID == "" {
 		return nil, ErrEmptyOrderID
 	}
 	res, err := c.c.Do(fasthttp.MethodDelete, EndpointOrder, req, true, false)
@@ -356,7 +393,9 @@ func (c *Client) CancelOrder(req *CancelOrderReq) (*CancelOrder, error) {
 		return nil, err
 	}
 	resp := &CancelOrder{}
-	return resp, json.Unmarshal(res, resp)
+	err = json.Unmarshal(res, resp)
+
+	return resp, err
 }
 
 // OpenOrders get all open orders on a symbol
@@ -369,7 +408,9 @@ func (c *Client) OpenOrders(req *OpenOrdersReq) ([]*QueryOrder, error) {
 		return nil, err
 	}
 	var resp []*QueryOrder
-	return resp, json.Unmarshal(res, &resp)
+	err = json.Unmarshal(res, &resp)
+
+	return resp, err
 }
 
 // CancelOpenOrders cancel all open orders on a symbol
@@ -382,7 +423,9 @@ func (c *Client) CancelOpenOrders(req *CancelOpenOrdersReq) ([]*CancelOrder, err
 		return nil, err
 	}
 	var resp []*CancelOrder
-	return resp, json.Unmarshal(res, &resp)
+	err = json.Unmarshal(res, &resp)
+
+	return resp, err
 }
 
 // AllOrders get all account orders; active, canceled, or filled
@@ -398,7 +441,9 @@ func (c *Client) AllOrders(req *AllOrdersReq) ([]*QueryOrder, error) {
 		return nil, err
 	}
 	var resp []*QueryOrder
-	return resp, json.Unmarshal(res, &resp)
+	err = json.Unmarshal(res, &resp)
+
+	return resp, err
 }
 
 // Account get current account information
@@ -408,7 +453,9 @@ func (c *Client) Account() (*AccountInfo, error) {
 		return nil, err
 	}
 	resp := &AccountInfo{}
-	return resp, json.Unmarshal(res, &resp)
+	err = json.Unmarshal(res, &resp)
+
+	return resp, err
 }
 
 // AccountTrades get trades for a specific account and symbol
@@ -424,7 +471,9 @@ func (c *Client) AccountTrades(req *AccountTradesReq) (*AccountTrades, error) {
 		return nil, err
 	}
 	resp := &AccountTrades{}
-	return resp, json.Unmarshal(res, &resp)
+	err = json.Unmarshal(res, &resp)
+
+	return resp, err
 }
 
 func (c *Client) ExchangeInfo() (*ExchangeInfo, error) {
@@ -433,7 +482,9 @@ func (c *Client) ExchangeInfo() (*ExchangeInfo, error) {
 		return nil, err
 	}
 	resp := &ExchangeInfo{}
-	return resp, json.Unmarshal(res, &resp)
+	err = json.Unmarshal(res, &resp)
+
+	return resp, err
 }
 
 func (c *Client) ExchangeInfoSymbol(req *ExchangeInfoReq) (*ExchangeInfo, error) {
@@ -445,7 +496,9 @@ func (c *Client) ExchangeInfoSymbol(req *ExchangeInfoReq) (*ExchangeInfo, error)
 		return nil, err
 	}
 	resp := &ExchangeInfo{}
-	return resp, json.Unmarshal(res, &resp)
+	err = json.Unmarshal(res, &resp)
+
+	return resp, err
 }
 
 // User stream endpoint
@@ -458,17 +511,21 @@ func (c *Client) DataStream() (string, error) {
 	}
 
 	resp := &DatastreamReq{}
-	return resp.ListenKey, json.Unmarshal(res, &resp)
+	err = json.Unmarshal(res, &resp)
+
+	return resp.ListenKey, err
 }
 
 // DataStreamKeepAlive pings the datastream key to prevent timeout
 func (c *Client) DataStreamKeepAlive(listenKey string) error {
 	_, err := c.c.Do(fasthttp.MethodPut, EndpointDataStream, DatastreamReq{ListenKey: listenKey}, false, true)
+
 	return err
 }
 
 // DataStreamClose closes the datastream key
 func (c *Client) DataStreamClose(listenKey string) error {
 	_, err := c.c.Do(fasthttp.MethodDelete, EndpointDataStream, DatastreamReq{ListenKey: listenKey}, false, true)
+
 	return err
 }

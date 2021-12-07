@@ -78,7 +78,7 @@ type OrderReq struct {
 	Quantity         string        `url:"quantity,omitempty"`
 	QuoteQuantity    string        `url:"quoteOrderQty,omitempty"`
 	Price            string        `url:"price,omitempty"`
-	NewClientOrderId string        `url:"newClientOrderId,omitempty"`
+	NewClientOrderID string        `url:"newClientOrderId,omitempty"`
 	StopPrice        string        `url:"stopPrice,omitempty"`
 	IcebergQty       string        `url:"icebergQty,omitempty"`
 	OrderRespType    OrderRespType `url:"newOrderRespType,omitempty"`
@@ -192,16 +192,21 @@ func (b *DepthElem) UnmarshalJSON(data []byte) error {
 			next = true
 			price = qty
 			qty += 3
+
 			continue
 		}
 		qty++
 	}
 	if price < 3 || qty < 4 || !next {
-		return ErrInvalidJson
+		return ErrInvalidJSON
 	}
 	var err error
 	b.Price, err = decimal.NewFromString(b2s(data[2:price]))
+	if err != nil {
+		return err
+	}
 	b.Quantity, err = decimal.NewFromString(b2s(data[price+3 : qty]))
+
 	return err
 }
 
@@ -267,9 +272,8 @@ type Klines struct {
 }
 
 var (
-	klinesQuote  = []byte(`"`)
-	klinesDelim  = []byte(`,`)
-	klinesCutset = "[]"
+	klinesQuote = []byte(`"`)
+	klinesDelim = []byte(`,`)
 )
 
 // UnmarshalJSON unmarshal the given depth raw data and converts to depth struct
@@ -280,33 +284,59 @@ func (b *Klines) UnmarshalJSON(data []byte) error {
 	if len(data) == 0 {
 		return nil
 	}
-	s := bytes.Replace(data, klinesQuote, nil, -1)
-	s = bytes.Trim(s, klinesCutset)
+	s := bytes.ReplaceAll(data, klinesQuote, nil)
 	tokens := bytes.Split(s, klinesDelim)
 	if len(tokens) < 11 {
-		return ErrInvalidJson
+		return ErrInvalidJSON
 	}
-	var err error
-	u, err := fasthttp.ParseUint(tokens[0])
+	u, err := fasthttp.ParseUint(tokens[0][1:])
 	if err != nil {
-		return ErrInvalidJson
+		return ErrInvalidJSON
 	}
 	b.OpenTime = uint64(u)
 	b.OpenPrice, err = decimal.NewFromString(b2s(tokens[1]))
+	if err != nil {
+		return ErrInvalidJSON
+	}
 	b.High, err = decimal.NewFromString(b2s(tokens[2]))
+	if err != nil {
+		return ErrInvalidJSON
+	}
 	b.Low, err = decimal.NewFromString(b2s(tokens[3]))
+	if err != nil {
+		return ErrInvalidJSON
+	}
 	b.ClosePrice, err = decimal.NewFromString(b2s(tokens[4]))
+	if err != nil {
+		return ErrInvalidJSON
+	}
 	b.Volume, err = decimal.NewFromString(b2s(tokens[5]))
+	if err != nil {
+		return ErrInvalidJSON
+	}
 	u, err = fasthttp.ParseUint(tokens[6])
 	if err != nil {
-		return ErrInvalidJson
+		return ErrInvalidJSON
 	}
 	b.CloseTime = uint64(u)
 	b.QuoteAssetVolume, err = decimal.NewFromString(b2s(tokens[7]))
-	b.Trades, err = fasthttp.ParseUint(tokens[9])
+	if err != nil {
+		return ErrInvalidJSON
+	}
+	b.Trades, err = fasthttp.ParseUint(tokens[8])
+	if err != nil {
+		return ErrInvalidJSON
+	}
 	b.TakerBuyBaseAssetVolume, err = decimal.NewFromString(b2s(tokens[9]))
+	if err != nil {
+		return ErrInvalidJSON
+	}
 	b.TakerBuyQuoteAssetVolume, err = decimal.NewFromString(b2s(tokens[10]))
-	return err
+	if err != nil {
+		return ErrInvalidJSON
+	}
+
+	return nil
 }
 
 type AvgPriceReq struct {
@@ -371,7 +401,7 @@ type SymbolPrice struct {
 type QueryOrderReq struct {
 	Symbol            string `url:"symbol"`
 	OrderID           uint64 `url:"orderId,omitempty"`
-	OrigClientOrderId string `url:"origClientOrderId,omitempty"`
+	OrigClientOrderID string `url:"origClientOrderId,omitempty"`
 }
 
 type QueryOrder struct {
@@ -398,8 +428,8 @@ type QueryOrder struct {
 type CancelOrderReq struct {
 	Symbol            string `url:"symbol"`
 	OrderID           uint64 `url:"orderId,omitempty"`
-	OrigClientOrderId string `url:"origClientOrderId,omitempty"`
-	NewClientOrderId  string `url:"newClientOrderId,omitempty"`
+	OrigClientOrderID string `url:"origClientOrderId,omitempty"`
+	NewClientOrderID  string `url:"newClientOrderId,omitempty"`
 }
 
 type CancelOrder struct {

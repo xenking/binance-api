@@ -52,11 +52,13 @@ func (c RestClientConfig) defaults() RestClientConfig {
 	if c.ResponseWindow == 0 {
 		c.ResponseWindow = DefaultResponseWindow
 	}
+
 	return c
 }
 
 func NewCustomRestClient(config RestClientConfig) RestClient {
 	c := config.defaults()
+
 	return &restClient{
 		apikey: c.APIKey,
 		hmac:   hmac.New(sha256.New, s2b(c.APISecret)),
@@ -78,10 +80,10 @@ type restClient struct {
 
 const (
 	DefaultSchema  = "https"
-	HeaderTypeJson = "application/json"
+	HeaderTypeJSON = "application/json"
 	HeaderTypeForm = "application/x-www-form-urlencoded"
 	HeaderAccept   = "Accept"
-	HeaderApiKey   = "X-MBX-APIKEY"
+	HeaderAPIKey   = "X-MBX-APIKEY" //nolint:gosec
 )
 
 var (
@@ -105,7 +107,7 @@ func newHTTPClient() *fasthttp.HostClient {
 // Do invokes the given API command with the given data
 // sign indicates whether the api call should be done with signed payload
 // stream indicates if the request is stream related
-func (c *restClient) Do(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error) {
+func (c *restClient) Do(method, endpoint string, data interface{}, sign, stream bool) ([]byte, error) {
 	// Convert the given data to urlencoded format
 	values, err := query.Values(data)
 	if err != nil {
@@ -123,22 +125,21 @@ func (c *restClient) Do(method, endpoint string, data interface{}, sign bool, st
 	// Remark: This is done only to routes with actual data
 	if sign {
 		buf := bytebufferpool.Get()
-		pb = append(pb, "&timestamp="...)
-		pb = append(pb, strconv.AppendInt(buf.B, time.Now().UnixNano()/(1000*1000), 10)...)
-		buf.Reset()
-		pb = append(pb, "&recvWindow="...)
-		pb = append(pb, strconv.AppendInt(buf.B, int64(c.window), 10)...)
+		pb = append(pb, "&timestamp="...)                                                               //nolint:makezero
+		pb = append(pb, strconv.AppendInt(buf.B, time.Now().UnixNano()/int64(time.Millisecond), 10)...) //nolint:makezero
 
+		buf.Reset()
+		pb = append(pb, "&recvWindow="...)                                //nolint:makezero
+		pb = append(pb, strconv.AppendInt(buf.B, int64(c.window), 10)...) //nolint:makezero
 		_, err = c.hmac.Write(pb)
 		if err != nil {
 			return nil, err
 		}
-		pb = append(pb, "&signature="...)
+		pb = append(pb, "&signature="...) //nolint:makezero
 		sum := c.hmac.Sum(nil)
 		enc := make([]byte, len(sum)*2)
 		hex.Encode(enc, sum)
-		pb = append(pb, enc...)
-
+		pb = append(pb, enc...) //nolint:makezero
 		c.hmac.Reset()
 		bytebufferpool.Put(buf)
 	}
@@ -165,18 +166,19 @@ func (c *restClient) Do(method, endpoint string, data interface{}, sign bool, st
 	req.SetRequestURI(b.String())
 
 	if sign || stream {
-		req.Header.Add(HeaderApiKey, c.apikey)
+		req.Header.Add(HeaderAPIKey, c.apikey)
 	}
 
-	req.Header.Add(HeaderAccept, HeaderTypeJson)
+	req.Header.Add(HeaderAccept, HeaderTypeJSON)
 	resp := fasthttp.AcquireResponse()
 
-	if err = c.client.Do(req, resp); err != nil {
+	err = c.client.Do(req, resp)
+	if err != nil {
 		return nil, err
 	}
 	fasthttp.ReleaseRequest(req)
 
-	body := append(resp.Body())
+	body := append([]byte{}, resp.Body()...)
 
 	pb = append(pb[:0], resp.Header.Header()...)
 	status := resp.StatusCode()
@@ -196,7 +198,7 @@ func (c *restClient) Do(method, endpoint string, data interface{}, sign bool, st
 	}
 
 	if status != fasthttp.StatusOK {
-		if h := getHeader(pb, HeaderRetryAfter); h != nil && len(h) > 2 {
+		if h := getHeader(pb, HeaderRetryAfter); len(h) > 2 {
 			retry, parseErr := fasthttp.ParseUint(h[2:])
 			if parseErr == nil {
 				c.retryAfter.Store(retry)
@@ -204,11 +206,14 @@ func (c *restClient) Do(method, endpoint string, data interface{}, sign bool, st
 		}
 
 		apiErr := &APIError{}
-		if err = json.Unmarshal(body, apiErr); err != nil {
+		err = json.Unmarshal(body, apiErr)
+		if err != nil {
 			return nil, err
 		}
+
 		return nil, apiErr
 	}
+
 	return body, err
 }
 
@@ -219,20 +224,23 @@ func parseInterval(header []byte) (interval string, value int, err error) {
 		switch {
 		case c == ':', c == ' ':
 			parseValue = true
+
 			continue
 		case parseValue:
 			value, err = fasthttp.ParseUint(header[i:])
+
 			return
 		case c >= '0' && c <= '9':
 			continue
 		}
 		interval = string(header[:i+1])
 	}
+
 	return
 }
 
 func getHeader(header, search []byte) []byte {
-	if header == nil || len(header) == 0 {
+	if len(header) == 0 {
 		return nil
 	}
 	if idx := bytes.Index(header, search); idx > 0 {
@@ -242,6 +250,7 @@ func getHeader(header, search []byte) []byte {
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -258,8 +267,10 @@ func (c *restClient) UsedWeight() map[string]int {
 		if ok1 && ok2 {
 			res[key] = value
 		}
+
 		return true
 	})
+
 	return res
 }
 
@@ -271,8 +282,10 @@ func (c *restClient) OrderCount() map[string]int {
 		if ok1 && ok2 {
 			res[key] = value
 		}
+
 		return true
 	})
+
 	return res
 }
 

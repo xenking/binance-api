@@ -6,6 +6,7 @@ import (
 	"github.com/xenking/fastws"
 )
 
+//nolint:structcheck
 type wsClient struct {
 	conn *fastws.Conn
 	err  error
@@ -30,6 +31,7 @@ func (d *Depth) Read() (*DepthUpdate, error) {
 	r := &DepthUpdate{}
 	err = json.Unmarshal(data, r)
 	bytebufferpool.Put(buf)
+
 	return r, err
 }
 
@@ -45,6 +47,7 @@ func (d *Depth) Stream() <-chan DepthUpdate {
 			_, data, err = d.conn.ReadMessage(msg[:0])
 			if err != nil {
 				d.err = err
+
 				return
 			}
 
@@ -52,11 +55,13 @@ func (d *Depth) Stream() <-chan DepthUpdate {
 			err = json.Unmarshal(data, &u)
 			if err != nil {
 				d.err = err
+
 				return
 			}
 			updates <- u
 		}
 	}()
+
 	return updates
 }
 
@@ -75,6 +80,7 @@ func (d *DepthLevel) Read() (*DepthLevelUpdate, error) {
 	r := &DepthLevelUpdate{}
 	err = json.Unmarshal(data, r)
 	bytebufferpool.Put(buf)
+
 	return r, err
 }
 
@@ -90,6 +96,7 @@ func (d *DepthLevel) Stream() <-chan DepthLevelUpdate {
 			_, data, err = d.conn.ReadMessage(msg[:0])
 			if err != nil {
 				d.err = err
+
 				return
 			}
 
@@ -97,11 +104,13 @@ func (d *DepthLevel) Stream() <-chan DepthLevelUpdate {
 			err = json.Unmarshal(data, &u)
 			if err != nil {
 				d.err = err
+
 				return
 			}
 			updates <- u
 		}
 	}()
+
 	return updates
 }
 
@@ -120,6 +129,7 @@ func (t *AllMarketTicker) Read() (*AllMarketTickerUpdate, error) {
 	r := &AllMarketTickerUpdate{}
 	err = json.Unmarshal(data, r)
 	bytebufferpool.Put(buf)
+
 	return r, err
 }
 
@@ -135,6 +145,7 @@ func (t *AllMarketTicker) Stream() <-chan AllMarketTickerUpdate {
 			_, data, err = t.conn.ReadMessage(msg[:0])
 			if err != nil {
 				t.err = err
+
 				return
 			}
 
@@ -142,11 +153,13 @@ func (t *AllMarketTicker) Stream() <-chan AllMarketTickerUpdate {
 			err = json.Unmarshal(data, &u)
 			if err != nil {
 				t.err = err
+
 				return
 			}
 			updates <- u
 		}
 	}()
+
 	return updates
 }
 
@@ -165,6 +178,7 @@ func (t *IndivTicker) Read() (*IndivTickerUpdate, error) {
 	r := &IndivTickerUpdate{}
 	err = json.Unmarshal(data, r)
 	bytebufferpool.Put(buf)
+
 	return r, err
 }
 
@@ -180,6 +194,7 @@ func (t *IndivTicker) Stream() <-chan IndivTickerUpdate {
 			_, data, err = t.conn.ReadMessage(msg[:0])
 			if err != nil {
 				t.err = err
+
 				return
 			}
 
@@ -187,11 +202,13 @@ func (t *IndivTicker) Stream() <-chan IndivTickerUpdate {
 			err = json.Unmarshal(data, &u)
 			if err != nil {
 				t.err = err
+
 				return
 			}
 			updates <- u
 		}
 	}()
+
 	return updates
 }
 
@@ -210,6 +227,7 @@ func (t *AllMarketMiniTicker) Read() (*AllMarketMiniTickerUpdate, error) {
 	r := &AllMarketMiniTickerUpdate{}
 	err = json.Unmarshal(data, r)
 	bytebufferpool.Put(buf)
+
 	return r, err
 }
 
@@ -225,6 +243,7 @@ func (t *AllMarketMiniTicker) Stream() <-chan AllMarketMiniTickerUpdate {
 			_, data, err = t.conn.ReadMessage(msg[:0])
 			if err != nil {
 				t.err = err
+
 				return
 			}
 
@@ -232,11 +251,13 @@ func (t *AllMarketMiniTicker) Stream() <-chan AllMarketMiniTickerUpdate {
 			err = json.Unmarshal(data, &u)
 			if err != nil {
 				t.err = err
+
 				return
 			}
 			updates <- u
 		}
 	}()
+
 	return updates
 }
 
@@ -255,6 +276,7 @@ func (t *IndivMiniTicker) Read() (*IndivMiniTickerUpdate, error) {
 	r := &IndivMiniTickerUpdate{}
 	err = json.Unmarshal(data, r)
 	bytebufferpool.Put(buf)
+
 	return r, err
 }
 
@@ -270,6 +292,7 @@ func (t *IndivMiniTicker) Stream() <-chan IndivMiniTickerUpdate {
 			_, data, err = t.conn.ReadMessage(msg[:0])
 			if err != nil {
 				t.err = err
+
 				return
 			}
 
@@ -277,11 +300,13 @@ func (t *IndivMiniTicker) Stream() <-chan IndivMiniTickerUpdate {
 			err = json.Unmarshal(data, &u)
 			if err != nil {
 				t.err = err
+
 				return
 			}
 			updates <- u
 		}
 	}()
+
 	return updates
 }
 
@@ -300,6 +325,7 @@ func (t *AllBookTicker) Read() (*AllBookTickerUpdate, error) {
 	r := &AllBookTickerUpdate{}
 	err = json.Unmarshal(data, r)
 	bytebufferpool.Put(buf)
+
 	return r, err
 }
 
@@ -315,6 +341,7 @@ func (t *AllBookTicker) Stream() <-chan AllBookTickerUpdate {
 			_, data, err = t.conn.ReadMessage(msg[:0])
 			if err != nil {
 				t.err = err
+
 				return
 			}
 
@@ -322,11 +349,13 @@ func (t *AllBookTicker) Stream() <-chan AllBookTickerUpdate {
 			err = json.Unmarshal(data, &u)
 			if err != nil {
 				t.err = err
+
 				return
 			}
 			updates <- u
 		}
 	}()
+
 	return updates
 }
 
@@ -345,6 +374,7 @@ func (t *IndivBookTicker) Read() (*IndivBookTickerUpdate, error) {
 	r := &IndivBookTickerUpdate{}
 	err = json.Unmarshal(data, r)
 	bytebufferpool.Put(buf)
+
 	return r, err
 }
 
@@ -360,6 +390,7 @@ func (t *IndivBookTicker) Stream() <-chan IndivBookTickerUpdate {
 			_, data, err = t.conn.ReadMessage(msg[:0])
 			if err != nil {
 				t.err = err
+
 				return
 			}
 
@@ -367,11 +398,13 @@ func (t *IndivBookTicker) Stream() <-chan IndivBookTickerUpdate {
 			err = json.Unmarshal(data, &u)
 			if err != nil {
 				t.err = err
+
 				return
 			}
 			updates <- u
 		}
 	}()
+
 	return updates
 }
 
@@ -390,6 +423,7 @@ func (k *Klines) Read() (*KlinesUpdate, error) {
 	r := &KlinesUpdate{}
 	err = json.Unmarshal(data, r)
 	bytebufferpool.Put(buf)
+
 	return r, err
 }
 
@@ -405,6 +439,7 @@ func (k *Klines) Stream() <-chan KlinesUpdate {
 			_, data, err = k.conn.ReadMessage(msg[:0])
 			if err != nil {
 				k.err = err
+
 				return
 			}
 
@@ -412,11 +447,13 @@ func (k *Klines) Stream() <-chan KlinesUpdate {
 			err = json.Unmarshal(data, &u)
 			if err != nil {
 				k.err = err
+
 				return
 			}
 			updates <- u
 		}
 	}()
+
 	return updates
 }
 
@@ -435,6 +472,7 @@ func (t *AggTrades) Read() (*AggTradeUpdate, error) {
 	r := &AggTradeUpdate{}
 	err = json.Unmarshal(data, r)
 	bytebufferpool.Put(buf)
+
 	return r, err
 }
 
@@ -450,6 +488,7 @@ func (t *AggTrades) Stream() <-chan AggTradeUpdate {
 			_, data, err = t.conn.ReadMessage(msg[:0])
 			if err != nil {
 				t.err = err
+
 				return
 			}
 
@@ -457,11 +496,13 @@ func (t *AggTrades) Stream() <-chan AggTradeUpdate {
 			err = json.Unmarshal(data, &u)
 			if err != nil {
 				t.err = err
+
 				return
 			}
 			updates <- u
 		}
 	}()
+
 	return updates
 }
 
@@ -480,6 +521,7 @@ func (t *Trades) Read() (*TradeUpdate, error) {
 	r := &TradeUpdate{}
 	err = json.Unmarshal(data, r)
 	bytebufferpool.Put(buf)
+
 	return r, err
 }
 
@@ -495,6 +537,7 @@ func (t *Trades) Stream() <-chan TradeUpdate {
 			_, data, err = t.conn.ReadMessage(msg[:0])
 			if err != nil {
 				t.err = err
+
 				return
 			}
 
@@ -502,11 +545,13 @@ func (t *Trades) Stream() <-chan TradeUpdate {
 			err = json.Unmarshal(data, &u)
 			if err != nil {
 				t.err = err
+
 				return
 			}
 			updates <- u
 		}
 	}()
+
 	return updates
 }
 
@@ -526,10 +571,12 @@ func (i *AccountInfo) Read() (UpdateType, interface{}, error) {
 		return UpdateTypeUnknown, nil, err
 	}
 	et := EventTypeUpdate{}
-	if err = json.Unmarshal(data, &et); err != nil {
+	err = json.Unmarshal(data, &et)
+	if err != nil {
 		return UpdateTypeUnknown, nil, err
 	}
 	var resp interface{}
+	//nolint:exhaustive
 	switch et.EventType {
 	case UpdateTypeOutboundAccountInfo:
 		resp = &AccountInfoUpdate{}
@@ -544,5 +591,6 @@ func (i *AccountInfo) Read() (UpdateType, interface{}, error) {
 	default:
 		return et.EventType, data, nil
 	}
+
 	return et.EventType, resp, json.Unmarshal(data, resp)
 }

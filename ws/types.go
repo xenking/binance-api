@@ -169,9 +169,11 @@ func (e *EventTypeUpdate) UnmarshalJSON(buf []byte) error {
 	end := bytes.IndexByte(buf, ',')
 	if end < start+2 || end-start < 3 {
 		e.EventType = UpdateTypeUnknown
+
 		return ErrIncorrectEventType
 	}
 	e.EventType = UpdateType(b2s(buf[start+2 : end-1]))
+
 	return nil
 }
 
@@ -242,8 +244,8 @@ type OrderUpdate struct {
 	Price               string               `json:"p"` // Price is the order price
 	StopPrice           string               `json:"P"`
 	IcebergQty          string               `json:"F"`
-	OrderListId         int64                `json:"g"`
-	OrigClientOrderId   string               `json:"C"`
+	OrderListID         int64                `json:"g"`
+	OrigClientOrderID   string               `json:"C"`
 	ExecutionType       binance.OrderStatus  `json:"x"` // ExecutionType represents the execution type for the order
 	Status              binance.OrderStatus  `json:"X"` // Status represents the order status for the order
 	Error               binance.OrderFailure `json:"r"` // Error represents an order rejection reason

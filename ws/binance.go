@@ -12,6 +12,7 @@ const (
 	BaseWS = "wss://stream.binance.com:9443/ws/"
 )
 
+//nolint:structcheck,unused
 type Client struct {
 	conn   *fastws.Conn
 	baseWS string
@@ -38,6 +39,7 @@ func (c *Client) Depth(symbol string, frequency FrequencyType) (*Depth, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &Depth{wsClient{conn: conn}}, nil
 }
 
@@ -53,6 +55,7 @@ func (c *Client) DepthLevel(symbol, level string, frequency FrequencyType) (*Dep
 	if err != nil {
 		return nil, err
 	}
+
 	return &DepthLevel{wsClient{conn: conn}}, nil
 }
 
@@ -65,6 +68,7 @@ func (c *Client) AllMarketTickers() (*AllMarketTicker, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &AllMarketTicker{wsClient{conn: conn}}, nil
 }
 
@@ -78,6 +82,7 @@ func (c *Client) IndivTicker(symbol string) (*IndivTicker, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &IndivTicker{wsClient{conn: conn}}, nil
 }
 
@@ -90,6 +95,7 @@ func (c *Client) AllMarketMiniTickers() (*AllMarketMiniTicker, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &AllMarketMiniTicker{wsClient{conn: conn}}, nil
 }
 
@@ -103,6 +109,7 @@ func (c *Client) IndivMiniTicker(symbol string) (*IndivMiniTicker, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &IndivMiniTicker{wsClient{conn: conn}}, nil
 }
 
@@ -115,6 +122,7 @@ func (c *Client) AllBookTickers() (*AllBookTicker, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &AllBookTicker{wsClient{conn: conn}}, nil
 }
 
@@ -128,6 +136,7 @@ func (c *Client) IndivBookTicker(symbol string) (*IndivBookTicker, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &IndivBookTicker{wsClient{conn: conn}}, nil
 }
 
@@ -142,6 +151,7 @@ func (c *Client) Klines(symbol string, interval binance.KlineInterval) (*Klines,
 	if err != nil {
 		return nil, err
 	}
+
 	return &Klines{wsClient{conn: conn}}, nil
 }
 
@@ -155,6 +165,7 @@ func (c *Client) AggTrades(symbol string) (*AggTrades, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &AggTrades{wsClient{conn: conn}}, nil
 }
 
@@ -168,6 +179,7 @@ func (c *Client) Trades(symbol string) (*Trades, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &Trades{wsClient{conn: conn}}, nil
 }
 
@@ -181,5 +193,6 @@ func (c *Client) AccountInfo(listenKey string) (*AccountInfo, error) {
 		return nil, err
 	}
 	conn.ReadTimeout = 0
+
 	return &AccountInfo{wsClient{conn: conn}}, nil
 }

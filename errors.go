@@ -12,7 +12,7 @@ var (
 	ErrEmptyLimit   = errors.New("empty price or quantity")
 	ErrEmptyMarket  = errors.New("quantity or quote quantity expected")
 	ErrNilUnmarshal = errors.New("UnmarshalJSON on nil pointer")
-	ErrInvalidJson  = errors.New("invalid json")
+	ErrInvalidJSON  = errors.New("invalid json")
 )
 
 type APIError struct {
@@ -23,5 +23,6 @@ type APIError struct {
 // Error return error code and message
 func (e *APIError) Error() string {
 	bb, _ := json.Marshal(e)
+
 	return b2s(bb)
 }
