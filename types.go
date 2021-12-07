@@ -501,14 +501,19 @@ const MaxAccountTradesLimit = 500
 
 type AccountTradesReq struct {
 	Symbol    string `url:"symbol"`
-	Limit     int    `url:"limit,omitempty"`  // Limit is the maximal number of elements to receive. Default 500; Max 1000
-	FromID    int    `url:"fromId,omitempty"` // FromID is trade ID to fetch from. Default gets most recent trades
+	OrderID   string `url:"orderId,omitempty"` // OrderID can only be used in combination with symbol
+	Limit     int    `url:"limit,omitempty"`   // Limit is the maximal number of elements to receive. Default 500; Max 1000
+	FromID    int    `url:"fromId,omitempty"`  // FromID is trade ID to fetch from. Default gets most recent trades
 	StartTime uint64 `url:"startTime,omitempty"`
 	EndTime   uint64 `url:"endTime,omitempty"`
 }
 
 type AccountTrades struct {
 	ID              int    `json:"id"`
+	OrderID         int    `json:"orderId"`
+	OrderListID     int    `json:"orderListId"`
+	Symbol          string `json:"symbol"`
+	QuoteQty        string `json:"quoteQty"`
 	Price           string `json:"price"`
 	Qty             string `json:"qty"`
 	Commission      string `json:"commission"`
