@@ -7,7 +7,7 @@ import (
 
 const (
 	// BaseHost for binance addresses
-	BaseHost         = "api.binance.com"
+	BaseHost         = "api.binance.com:443"
 	DefaultUserAgent = "Binance/client"
 )
 
@@ -20,6 +20,15 @@ func NewClient(apikey, secret string) *Client {
 	return &Client{
 		c: NewRestClient(apikey, secret),
 	}
+}
+
+// NewClientHTTP2 creates a new binance client using HTTP/2 protocol with key and secret
+func NewClientHTTP2(apikey, secret string) (*Client, error) {
+	c, err := NewRestClientHTTP2(apikey, secret)
+
+	return &Client{
+		c: c,
+	}, err
 }
 
 func NewCustomClient(restClient RestClient) *Client {

@@ -12,6 +12,10 @@ func TestClient(t *testing.T) {
 	suite.Run(t, new(clientTestSuite))
 }
 
+func TestClientHTTP2(t *testing.T) {
+	suite.Run(t, new(clientHTTP2TestSuite))
+}
+
 func TestMockClient(t *testing.T) {
 	suite.Run(t, new(mockedTestSuite))
 }
@@ -21,12 +25,12 @@ type baseTestSuite struct {
 	api *Client
 }
 
-type clientTestSuite struct {
-	baseTestSuite
-}
-
 func (s *baseTestSuite) SetupSuite() {
 	s.api = NewClient("", "")
+}
+
+type clientTestSuite struct {
+	baseTestSuite
 }
 
 func (s *clientTestSuite) TestPing() {
@@ -79,6 +83,16 @@ func (s *clientTestSuite) TestExchangeInfo() {
 	s.Require().NoError(err)
 	s.Require().NotNil(info)
 	s.Require().NotEmpty(info.Symbols)
+}
+
+type clientHTTP2TestSuite struct {
+	clientTestSuite
+}
+
+func (s *clientHTTP2TestSuite) SetupSuite() {
+	var err error
+	s.api, err = NewClientHTTP2("", "")
+	s.Require().NoError(err)
 }
 
 type mockedClient struct {

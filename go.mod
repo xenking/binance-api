@@ -3,6 +3,7 @@ module github.com/xenking/binance-api
 go 1.17
 
 require (
+	github.com/dgrr/http2 v0.2.13
 	github.com/google/go-querystring v1.1.0
 	github.com/pkg/errors v0.9.1
 	github.com/segmentio/encoding v0.3.2
@@ -21,5 +22,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/segmentio/asm v1.1.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
+	github.com/valyala/fastrand v1.0.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )

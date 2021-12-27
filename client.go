@@ -12,7 +12,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/dgrr/http2"
 	"github.com/google/go-querystring/query"
+	"github.com/pkg/errors"
 	"github.com/segmentio/encoding/json"
 	"github.com/valyala/fasthttp"
 	"github.com/xenking/bytebufferpool"
@@ -36,6 +38,17 @@ func NewRestClient(key, secret string) RestClient {
 		client: newHTTPClient(),
 		window: DefaultResponseWindow,
 	}
+}
+
+func NewRestClientHTTP2(key, secret string) (RestClient, error) {
+	c, err := newHTTP2Client()
+
+	return &restClient{
+		apikey: key,
+		hmac:   hmac.New(sha256.New, s2b(secret)),
+		client: c,
+		window: DefaultResponseWindow,
+	}, err
 }
 
 type RestClientConfig struct {
@@ -91,6 +104,23 @@ var (
 	HeaderOrderCount = []byte("X-Mbx-Order-Count-")
 	HeaderRetryAfter = []byte("Retry-After")
 )
+
+func newHTTP2Client() (*fasthttp.HostClient, error) {
+	hc := &fasthttp.HostClient{
+		NoDefaultUserAgentHeader:      true, // Don't send: User-Agent: fasthttp
+		DisableHeaderNamesNormalizing: false,
+		DisablePathNormalizing:        false,
+		IsTLS:                         true,
+		Name:                          DefaultUserAgent,
+		Addr:                          BaseHost,
+	}
+
+	if err := http2.ConfigureClient(hc, http2.ClientOpts{}); err != nil {
+		return nil, errors.Wrapf(err, "%s doesn't support http/2", hc.Addr)
+	}
+
+	return hc, nil
+}
 
 // newHTTPClient create fasthttp.HostClient with default settings
 func newHTTPClient() *fasthttp.HostClient {
