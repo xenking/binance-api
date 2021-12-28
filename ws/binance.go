@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"net"
 	"strings"
 
 	"github.com/xenking/websocket"
@@ -13,6 +14,7 @@ const (
 )
 
 type Client struct {
+	conn   net.Conn
 	prefix string
 }
 
@@ -22,8 +24,8 @@ func NewClient() *Client {
 	}
 }
 
-func NewCustomClient(baseWS string) *Client {
-	return &Client{prefix: baseWS}
+func NewCustomClient(prefix string, conn net.Conn) *Client {
+	return &Client{prefix: prefix, conn: conn}
 }
 
 // Depth opens websocket with depth updates for the given symbol (eg @100ms frequency)
@@ -33,12 +35,19 @@ func (c *Client) Depth(symbol string, frequency FrequencyType) (*Depth, error) {
 	b.WriteString(strings.ToLower(symbol))
 	b.WriteString("@depth")
 	b.WriteString(string(frequency))
-	conn, err := websocket.Dial(b.String())
+
+	var wsc *websocket.Client
+	var err error
+	if c.conn != nil {
+		wsc, err = websocket.MakeClient(c.conn, b.String())
+	} else {
+		wsc, err = websocket.Dial(b.String())
+	}
 	if err != nil {
 		return nil, err
 	}
 
-	return &Depth{client{Client: conn}}, nil
+	return &Depth{client{Client: wsc}}, nil
 }
 
 // DepthLevel opens websocket with depth updates for the given symbol (eg @100ms frequency)
@@ -49,12 +58,19 @@ func (c *Client) DepthLevel(symbol, level string, frequency FrequencyType) (*Dep
 	b.WriteString("@depth")
 	b.WriteString(level)
 	b.WriteString(string(frequency))
-	conn, err := websocket.Dial(b.String())
+
+	var wsc *websocket.Client
+	var err error
+	if c.conn != nil {
+		wsc, err = websocket.MakeClient(c.conn, b.String())
+	} else {
+		wsc, err = websocket.Dial(b.String())
+	}
 	if err != nil {
 		return nil, err
 	}
 
-	return &DepthLevel{client{Client: conn}}, nil
+	return &DepthLevel{client{Client: wsc}}, nil
 }
 
 // AllMarketTickers opens websocket with with single depth summary for all tickers
@@ -62,12 +78,19 @@ func (c *Client) AllMarketTickers() (*AllMarketTicker, error) {
 	var b strings.Builder
 	b.WriteString(c.prefix)
 	b.WriteString("!ticker@arr")
-	conn, err := websocket.Dial(b.String())
+
+	var wsc *websocket.Client
+	var err error
+	if c.conn != nil {
+		wsc, err = websocket.MakeClient(c.conn, b.String())
+	} else {
+		wsc, err = websocket.Dial(b.String())
+	}
 	if err != nil {
 		return nil, err
 	}
 
-	return &AllMarketTicker{client{Client: conn}}, nil
+	return &AllMarketTicker{client{Client: wsc}}, nil
 }
 
 // IndivTicker opens websocket with with single depth summary for all tickers
@@ -76,12 +99,19 @@ func (c *Client) IndivTicker(symbol string) (*IndivTicker, error) {
 	b.WriteString(c.prefix)
 	b.WriteString(strings.ToLower(symbol))
 	b.WriteString("@ticker")
-	conn, err := websocket.Dial(b.String())
+
+	var wsc *websocket.Client
+	var err error
+	if c.conn != nil {
+		wsc, err = websocket.MakeClient(c.conn, b.String())
+	} else {
+		wsc, err = websocket.Dial(b.String())
+	}
 	if err != nil {
 		return nil, err
 	}
 
-	return &IndivTicker{client{Client: conn}}, nil
+	return &IndivTicker{client{Client: wsc}}, nil
 }
 
 // AllMarketMiniTickers opens websocket with with single depth summary for all mini-tickers
@@ -89,12 +119,19 @@ func (c *Client) AllMarketMiniTickers() (*AllMarketMiniTicker, error) {
 	var b strings.Builder
 	b.WriteString(c.prefix)
 	b.WriteString("!miniTicker@arr")
-	conn, err := websocket.Dial(b.String())
+
+	var wsc *websocket.Client
+	var err error
+	if c.conn != nil {
+		wsc, err = websocket.MakeClient(c.conn, b.String())
+	} else {
+		wsc, err = websocket.Dial(b.String())
+	}
 	if err != nil {
 		return nil, err
 	}
 
-	return &AllMarketMiniTicker{client{Client: conn}}, nil
+	return &AllMarketMiniTicker{client{Client: wsc}}, nil
 }
 
 // IndivMiniTicker opens websocket with with single depth summary for all mini-tickers
@@ -103,12 +140,19 @@ func (c *Client) IndivMiniTicker(symbol string) (*IndivMiniTicker, error) {
 	b.WriteString(c.prefix)
 	b.WriteString(strings.ToLower(symbol))
 	b.WriteString("@miniTicker")
-	conn, err := websocket.Dial(b.String())
+
+	var wsc *websocket.Client
+	var err error
+	if c.conn != nil {
+		wsc, err = websocket.MakeClient(c.conn, b.String())
+	} else {
+		wsc, err = websocket.Dial(b.String())
+	}
 	if err != nil {
 		return nil, err
 	}
 
-	return &IndivMiniTicker{client{Client: conn}}, nil
+	return &IndivMiniTicker{client{Client: wsc}}, nil
 }
 
 // AllBookTickers opens websocket with with single depth summary for all tickers
@@ -116,12 +160,19 @@ func (c *Client) AllBookTickers() (*AllBookTicker, error) {
 	var b strings.Builder
 	b.WriteString(c.prefix)
 	b.WriteString("!bookTicker")
-	conn, err := websocket.Dial(b.String())
+
+	var wsc *websocket.Client
+	var err error
+	if c.conn != nil {
+		wsc, err = websocket.MakeClient(c.conn, b.String())
+	} else {
+		wsc, err = websocket.Dial(b.String())
+	}
 	if err != nil {
 		return nil, err
 	}
 
-	return &AllBookTicker{client{Client: conn}}, nil
+	return &AllBookTicker{client{Client: wsc}}, nil
 }
 
 // IndivBookTicker opens websocket with book ticker best bid or ask updates for the given symbol
@@ -130,12 +181,19 @@ func (c *Client) IndivBookTicker(symbol string) (*IndivBookTicker, error) {
 	b.WriteString(c.prefix)
 	b.WriteString(strings.ToLower(symbol))
 	b.WriteString("@bookTicker")
-	conn, err := websocket.Dial(b.String())
+
+	var wsc *websocket.Client
+	var err error
+	if c.conn != nil {
+		wsc, err = websocket.MakeClient(c.conn, b.String())
+	} else {
+		wsc, err = websocket.Dial(b.String())
+	}
 	if err != nil {
 		return nil, err
 	}
 
-	return &IndivBookTicker{client{Client: conn}}, nil
+	return &IndivBookTicker{client{Client: wsc}}, nil
 }
 
 // Klines opens websocket with klines updates for the given symbol with the given interval
@@ -145,12 +203,19 @@ func (c *Client) Klines(symbol string, interval binance.KlineInterval) (*Klines,
 	b.WriteString(strings.ToLower(symbol))
 	b.WriteString("@kline_")
 	b.WriteString(string(interval))
-	conn, err := websocket.Dial(b.String())
+
+	var wsc *websocket.Client
+	var err error
+	if c.conn != nil {
+		wsc, err = websocket.MakeClient(c.conn, b.String())
+	} else {
+		wsc, err = websocket.Dial(b.String())
+	}
 	if err != nil {
 		return nil, err
 	}
 
-	return &Klines{client{Client: conn}}, nil
+	return &Klines{client{Client: wsc}}, nil
 }
 
 // AggTrades opens websocket with aggregated trades updates for the given symbol
@@ -159,12 +224,19 @@ func (c *Client) AggTrades(symbol string) (*AggTrades, error) {
 	b.WriteString(c.prefix)
 	b.WriteString(strings.ToLower(symbol))
 	b.WriteString("@aggTrade")
-	conn, err := websocket.Dial(b.String())
+
+	var wsc *websocket.Client
+	var err error
+	if c.conn != nil {
+		wsc, err = websocket.MakeClient(c.conn, b.String())
+	} else {
+		wsc, err = websocket.Dial(b.String())
+	}
 	if err != nil {
 		return nil, err
 	}
 
-	return &AggTrades{client{Client: conn}}, nil
+	return &AggTrades{client{Client: wsc}}, nil
 }
 
 // Trades opens websocket with trades updates for the given symbol
@@ -173,12 +245,19 @@ func (c *Client) Trades(symbol string) (*Trades, error) {
 	b.WriteString(c.prefix)
 	b.WriteString(strings.ToLower(symbol))
 	b.WriteString("@trade")
-	conn, err := websocket.Dial(b.String())
+
+	var wsc *websocket.Client
+	var err error
+	if c.conn != nil {
+		wsc, err = websocket.MakeClient(c.conn, b.String())
+	} else {
+		wsc, err = websocket.Dial(b.String())
+	}
 	if err != nil {
 		return nil, err
 	}
 
-	return &Trades{client{Client: conn}}, nil
+	return &Trades{client{Client: wsc}}, nil
 }
 
 // AccountInfo opens websocket with account info updates
@@ -186,10 +265,17 @@ func (c *Client) AccountInfo(listenKey string) (*AccountInfo, error) {
 	var b strings.Builder
 	b.WriteString(c.prefix)
 	b.WriteString(listenKey)
-	conn, err := websocket.Dial(b.String())
+
+	var wsc *websocket.Client
+	var err error
+	if c.conn != nil {
+		wsc, err = websocket.MakeClient(c.conn, b.String())
+	} else {
+		wsc, err = websocket.Dial(b.String())
+	}
 	if err != nil {
 		return nil, err
 	}
 
-	return &AccountInfo{client{Client: conn}}, nil
+	return &AccountInfo{client{Client: wsc}}, nil
 }
