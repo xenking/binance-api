@@ -11,7 +11,7 @@ require (
 	github.com/valyala/fasthttp v1.31.0
 	github.com/xenking/bytebufferpool v1.1.0
 	github.com/xenking/decimal v1.3.4
-	github.com/xenking/fastws v1.2.0
+	github.com/xenking/websocket v1.0.0
 )
 
 require (

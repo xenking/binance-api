@@ -2,579 +2,430 @@ package ws
 
 import (
 	"github.com/segmentio/encoding/json"
-	"github.com/xenking/bytebufferpool"
-	"github.com/xenking/fastws"
+	"github.com/xenking/websocket"
 )
 
-//nolint:structcheck
-type wsClient struct {
-	conn *fastws.Conn
-	err  error
+type client struct {
+	*websocket.Client
+	streamErr error
 }
 
-func (w *wsClient) Close() error {
-	return w.conn.Close()
+func (c *client) Err() error {
+	return c.streamErr
+}
+
+func (c *client) read(value interface{}) error {
+	fr := websocket.AcquireFrame()
+	fr.Reset()
+	_, err := c.ReadFrame(fr)
+	if err != nil {
+		websocket.ReleaseFrame(fr)
+
+		return err
+	}
+	err = json.Unmarshal(fr.Payload(), value)
+	websocket.ReleaseFrame(fr)
+
+	return err
+}
+
+func (c *client) stream(deferFunc func(), cb func(data []byte) error) {
+	fr := websocket.AcquireFrame()
+	defer websocket.ReleaseFrame(fr)
+	defer deferFunc()
+
+	var err error
+	for {
+		fr.Reset()
+		_, err = c.ReadFrame(fr)
+		if err != nil {
+			c.streamErr = err
+
+			return
+		}
+		err = cb(fr.Payload())
+		if err != nil {
+			c.streamErr = err
+
+			return
+		}
+	}
 }
 
 // Depth is a wrapper for depth websocket
 type Depth struct {
-	wsClient
+	client
 }
 
 // Read reads a depth update message from depth websocket
 func (d *Depth) Read() (*DepthUpdate, error) {
-	buf := bytebufferpool.Get()
-	_, data, err := d.conn.ReadMessage(buf.B)
-	if err != nil {
-		return nil, err
-	}
 	r := &DepthUpdate{}
-	err = json.Unmarshal(data, r)
-	bytebufferpool.Put(buf)
+	err := d.read(r)
 
 	return r, err
 }
 
 // Stream stream a depth update message from depth websocket to channel
-func (d *Depth) Stream() <-chan DepthUpdate {
-	updates := make(chan DepthUpdate)
-	go func() {
-		defer close(updates)
-		var msg []byte
-		var data []byte
-		var err error
-		for {
-			_, data, err = d.conn.ReadMessage(msg[:0])
-			if err != nil {
-				d.err = err
-
-				return
-			}
-
-			u := DepthUpdate{}
-			err = json.Unmarshal(data, &u)
-			if err != nil {
-				d.err = err
-
-				return
-			}
-			updates <- u
+func (d *Depth) Stream() <-chan *DepthUpdate {
+	updates := make(chan *DepthUpdate)
+	cb := func(data []byte) error {
+		u := &DepthUpdate{}
+		if err := json.Unmarshal(data, u); err != nil {
+			return err
 		}
-	}()
+		updates <- u
+
+		return nil
+	}
+	go d.stream(func() {
+		close(updates)
+	}, cb)
 
 	return updates
 }
 
 // DepthLevel is a wrapper for depth level websocket
 type DepthLevel struct {
-	wsClient
+	client
 }
 
 // Read reads a depth update message from depth level websocket
 func (d *DepthLevel) Read() (*DepthLevelUpdate, error) {
-	buf := bytebufferpool.Get()
-	_, data, err := d.conn.ReadMessage(buf.B)
-	if err != nil {
-		return nil, err
-	}
 	r := &DepthLevelUpdate{}
-	err = json.Unmarshal(data, r)
-	bytebufferpool.Put(buf)
+	err := d.read(r)
 
 	return r, err
 }
 
 // Stream stream a depth update message from depth level websocket to channel
-func (d *DepthLevel) Stream() <-chan DepthLevelUpdate {
-	updates := make(chan DepthLevelUpdate)
-	go func() {
-		defer close(updates)
-		var msg []byte
-		var data []byte
-		var err error
-		for {
-			_, data, err = d.conn.ReadMessage(msg[:0])
-			if err != nil {
-				d.err = err
-
-				return
-			}
-
-			u := DepthLevelUpdate{}
-			err = json.Unmarshal(data, &u)
-			if err != nil {
-				d.err = err
-
-				return
-			}
-			updates <- u
+func (d *DepthLevel) Stream() <-chan *DepthLevelUpdate {
+	updates := make(chan *DepthLevelUpdate)
+	cb := func(data []byte) error {
+		u := &DepthLevelUpdate{}
+		if err := json.Unmarshal(data, u); err != nil {
+			return err
 		}
-	}()
+		updates <- u
+
+		return nil
+	}
+	go d.stream(func() {
+		close(updates)
+	}, cb)
 
 	return updates
 }
 
 // AllMarketTicker is a wrapper for all markets tickers websocket
 type AllMarketTicker struct {
-	wsClient
+	client
 }
 
 // Read reads a market update message from all markets ticker websocket
 func (t *AllMarketTicker) Read() (*AllMarketTickerUpdate, error) {
-	buf := bytebufferpool.Get()
-	_, data, err := t.conn.ReadMessage(buf.B)
-	if err != nil {
-		return nil, err
-	}
 	r := &AllMarketTickerUpdate{}
-	err = json.Unmarshal(data, r)
-	bytebufferpool.Put(buf)
+	err := t.read(r)
 
 	return r, err
 }
 
 // Stream stream a market update message from all markets ticker websocket to channel
-func (t *AllMarketTicker) Stream() <-chan AllMarketTickerUpdate {
-	updates := make(chan AllMarketTickerUpdate)
-	go func() {
-		defer close(updates)
-		var msg []byte
-		var data []byte
-		var err error
-		for {
-			_, data, err = t.conn.ReadMessage(msg[:0])
-			if err != nil {
-				t.err = err
-
-				return
-			}
-
-			u := AllMarketTickerUpdate{}
-			err = json.Unmarshal(data, &u)
-			if err != nil {
-				t.err = err
-
-				return
-			}
-			updates <- u
+func (t *AllMarketTicker) Stream() <-chan *AllMarketTickerUpdate {
+	updates := make(chan *AllMarketTickerUpdate)
+	cb := func(data []byte) error {
+		u := &AllMarketTickerUpdate{}
+		if err := json.Unmarshal(data, u); err != nil {
+			return err
 		}
-	}()
+		updates <- u
+
+		return nil
+	}
+	go t.stream(func() {
+		close(updates)
+	}, cb)
 
 	return updates
 }
 
 // IndivTicker is a wrapper for an individual ticker websocket
 type IndivTicker struct {
-	wsClient
+	client
 }
 
 // Read reads a individual symbol update message from individual ticker websocket
 func (t *IndivTicker) Read() (*IndivTickerUpdate, error) {
-	buf := bytebufferpool.Get()
-	_, data, err := t.conn.ReadMessage(buf.B)
-	if err != nil {
-		return nil, err
-	}
 	r := &IndivTickerUpdate{}
-	err = json.Unmarshal(data, r)
-	bytebufferpool.Put(buf)
+	err := t.read(r)
 
 	return r, err
 }
 
 // Stream stream a individual update message from individual ticker websocket to channel
-func (t *IndivTicker) Stream() <-chan IndivTickerUpdate {
-	updates := make(chan IndivTickerUpdate)
-	go func() {
-		defer close(updates)
-		var msg []byte
-		var data []byte
-		var err error
-		for {
-			_, data, err = t.conn.ReadMessage(msg[:0])
-			if err != nil {
-				t.err = err
-
-				return
-			}
-
-			u := IndivTickerUpdate{}
-			err = json.Unmarshal(data, &u)
-			if err != nil {
-				t.err = err
-
-				return
-			}
-			updates <- u
+func (t *IndivTicker) Stream() <-chan *IndivTickerUpdate {
+	updates := make(chan *IndivTickerUpdate)
+	cb := func(data []byte) error {
+		u := &IndivTickerUpdate{}
+		if err := json.Unmarshal(data, u); err != nil {
+			return err
 		}
-	}()
+		updates <- u
+
+		return nil
+	}
+	go t.stream(func() {
+		close(updates)
+	}, cb)
 
 	return updates
 }
 
 // AllMarketMiniTicker is a wrapper for all markets mini-tickers websocket
 type AllMarketMiniTicker struct {
-	wsClient
+	client
 }
 
 // Read reads a market update message from all markets mini-ticker websocket
 func (t *AllMarketMiniTicker) Read() (*AllMarketMiniTickerUpdate, error) {
-	buf := bytebufferpool.Get()
-	_, data, err := t.conn.ReadMessage(buf.B)
-	if err != nil {
-		return nil, err
-	}
 	r := &AllMarketMiniTickerUpdate{}
-	err = json.Unmarshal(data, r)
-	bytebufferpool.Put(buf)
+	err := t.read(r)
 
 	return r, err
 }
 
 // Stream stream a market update message from all markets mini-ticker websocket to channel
-func (t *AllMarketMiniTicker) Stream() <-chan AllMarketMiniTickerUpdate {
-	updates := make(chan AllMarketMiniTickerUpdate)
-	go func() {
-		defer close(updates)
-		var msg []byte
-		var data []byte
-		var err error
-		for {
-			_, data, err = t.conn.ReadMessage(msg[:0])
-			if err != nil {
-				t.err = err
-
-				return
-			}
-
-			u := AllMarketMiniTickerUpdate{}
-			err = json.Unmarshal(data, &u)
-			if err != nil {
-				t.err = err
-
-				return
-			}
-			updates <- u
+func (t *AllMarketMiniTicker) Stream() <-chan *AllMarketMiniTickerUpdate {
+	updates := make(chan *AllMarketMiniTickerUpdate)
+	cb := func(data []byte) error {
+		u := &AllMarketMiniTickerUpdate{}
+		if err := json.Unmarshal(data, u); err != nil {
+			return err
 		}
-	}()
+		updates <- u
+
+		return nil
+	}
+	go t.stream(func() {
+		close(updates)
+	}, cb)
 
 	return updates
 }
 
 // IndivMiniTicker is a wrapper for an individual mini-ticker websocket
 type IndivMiniTicker struct {
-	wsClient
+	client
 }
 
 // Read reads a individual symbol update message from individual mini-ticker websocket
 func (t *IndivMiniTicker) Read() (*IndivMiniTickerUpdate, error) {
-	buf := bytebufferpool.Get()
-	_, data, err := t.conn.ReadMessage(buf.B)
-	if err != nil {
-		return nil, err
-	}
 	r := &IndivMiniTickerUpdate{}
-	err = json.Unmarshal(data, r)
-	bytebufferpool.Put(buf)
+	err := t.read(r)
 
 	return r, err
 }
 
 // Stream stream a individual update message from individual mini-ticker websocket to channel
-func (t *IndivMiniTicker) Stream() <-chan IndivMiniTickerUpdate {
-	updates := make(chan IndivMiniTickerUpdate)
-	go func() {
-		defer close(updates)
-		var msg []byte
-		var data []byte
-		var err error
-		for {
-			_, data, err = t.conn.ReadMessage(msg[:0])
-			if err != nil {
-				t.err = err
-
-				return
-			}
-
-			u := IndivMiniTickerUpdate{}
-			err = json.Unmarshal(data, &u)
-			if err != nil {
-				t.err = err
-
-				return
-			}
-			updates <- u
+func (t *IndivMiniTicker) Stream() <-chan *IndivMiniTickerUpdate {
+	updates := make(chan *IndivMiniTickerUpdate)
+	cb := func(data []byte) error {
+		u := &IndivMiniTickerUpdate{}
+		if err := json.Unmarshal(data, u); err != nil {
+			return err
 		}
-	}()
+		updates <- u
+
+		return nil
+	}
+	go t.stream(func() {
+		close(updates)
+	}, cb)
 
 	return updates
 }
 
 // AllBookTicker is a wrapper for all book tickers websocket
 type AllBookTicker struct {
-	wsClient
+	client
 }
 
 // Read reads a book update message from all book tickers websocket
 func (t *AllBookTicker) Read() (*AllBookTickerUpdate, error) {
-	buf := bytebufferpool.Get()
-	_, data, err := t.conn.ReadMessage(buf.B)
-	if err != nil {
-		return nil, err
-	}
 	r := &AllBookTickerUpdate{}
-	err = json.Unmarshal(data, r)
-	bytebufferpool.Put(buf)
+	err := t.read(r)
 
 	return r, err
 }
 
 // Stream stream a book update message from all book tickers websocket to channel
-func (t *AllBookTicker) Stream() <-chan AllBookTickerUpdate {
-	updates := make(chan AllBookTickerUpdate)
-	go func() {
-		defer close(updates)
-		var msg []byte
-		var data []byte
-		var err error
-		for {
-			_, data, err = t.conn.ReadMessage(msg[:0])
-			if err != nil {
-				t.err = err
-
-				return
-			}
-
-			u := AllBookTickerUpdate{}
-			err = json.Unmarshal(data, &u)
-			if err != nil {
-				t.err = err
-
-				return
-			}
-			updates <- u
+func (t *AllBookTicker) Stream() <-chan *AllBookTickerUpdate {
+	updates := make(chan *AllBookTickerUpdate)
+	cb := func(data []byte) error {
+		u := &AllBookTickerUpdate{}
+		if err := json.Unmarshal(data, u); err != nil {
+			return err
 		}
-	}()
+		updates <- u
+
+		return nil
+	}
+	go t.stream(func() {
+		close(updates)
+	}, cb)
 
 	return updates
 }
 
 // IndivBookTicker is a wrapper for an individual book ticker websocket
 type IndivBookTicker struct {
-	wsClient
+	client
 }
 
 // Read reads a individual book symbol update message from individual book ticker websocket
 func (t *IndivBookTicker) Read() (*IndivBookTickerUpdate, error) {
-	buf := bytebufferpool.Get()
-	_, data, err := t.conn.ReadMessage(buf.B)
-	if err != nil {
-		return nil, err
-	}
 	r := &IndivBookTickerUpdate{}
-	err = json.Unmarshal(data, r)
-	bytebufferpool.Put(buf)
+	err := t.read(r)
 
 	return r, err
 }
 
 // Stream stream a individual book symbol update message from individual book ticker websocket to channel
-func (t *IndivBookTicker) Stream() <-chan IndivBookTickerUpdate {
-	updates := make(chan IndivBookTickerUpdate)
-	go func() {
-		defer close(updates)
-		var msg []byte
-		var data []byte
-		var err error
-		for {
-			_, data, err = t.conn.ReadMessage(msg[:0])
-			if err != nil {
-				t.err = err
-
-				return
-			}
-
-			u := IndivBookTickerUpdate{}
-			err = json.Unmarshal(data, &u)
-			if err != nil {
-				t.err = err
-
-				return
-			}
-			updates <- u
+func (t *IndivBookTicker) Stream() <-chan *IndivBookTickerUpdate {
+	updates := make(chan *IndivBookTickerUpdate)
+	cb := func(data []byte) error {
+		u := &IndivBookTickerUpdate{}
+		if err := json.Unmarshal(data, u); err != nil {
+			return err
 		}
-	}()
+		updates <- u
+
+		return nil
+	}
+	go t.stream(func() {
+		close(updates)
+	}, cb)
 
 	return updates
 }
 
 // Klines is a wrapper for klines websocket
 type Klines struct {
-	wsClient
+	client
 }
 
 // Read reads a klines update message from klines websocket
 func (k *Klines) Read() (*KlinesUpdate, error) {
-	buf := bytebufferpool.Get()
-	_, data, err := k.conn.ReadMessage(buf.B)
-	if err != nil {
-		return nil, err
-	}
 	r := &KlinesUpdate{}
-	err = json.Unmarshal(data, r)
-	bytebufferpool.Put(buf)
+	err := k.read(r)
 
 	return r, err
 }
 
 // Stream stream a klines update message from klines websocket to channel
-func (k *Klines) Stream() <-chan KlinesUpdate {
-	updates := make(chan KlinesUpdate)
-	go func() {
-		defer close(updates)
-		var msg []byte
-		var data []byte
-		var err error
-		for {
-			_, data, err = k.conn.ReadMessage(msg[:0])
-			if err != nil {
-				k.err = err
-
-				return
-			}
-
-			u := KlinesUpdate{}
-			err = json.Unmarshal(data, &u)
-			if err != nil {
-				k.err = err
-
-				return
-			}
-			updates <- u
+func (k *Klines) Stream() <-chan *KlinesUpdate {
+	updates := make(chan *KlinesUpdate)
+	cb := func(data []byte) error {
+		u := &KlinesUpdate{}
+		if err := json.Unmarshal(data, u); err != nil {
+			return err
 		}
-	}()
+		updates <- u
+
+		return nil
+	}
+	go k.stream(func() {
+		close(updates)
+	}, cb)
 
 	return updates
 }
 
 // AggTrades is a wrapper for trades websocket
 type AggTrades struct {
-	wsClient
+	client
 }
 
 // Read reads a trades update message from aggregated trades websocket
 func (t *AggTrades) Read() (*AggTradeUpdate, error) {
-	buf := bytebufferpool.Get()
-	_, data, err := t.conn.ReadMessage(buf.B)
-	if err != nil {
-		return nil, err
-	}
 	r := &AggTradeUpdate{}
-	err = json.Unmarshal(data, r)
-	bytebufferpool.Put(buf)
+	err := t.read(r)
 
 	return r, err
 }
 
 // Stream stream a trades update message from aggregated trades websocket to channel
-func (t *AggTrades) Stream() <-chan AggTradeUpdate {
-	updates := make(chan AggTradeUpdate)
-	go func() {
-		defer close(updates)
-		var msg []byte
-		var data []byte
-		var err error
-		for {
-			_, data, err = t.conn.ReadMessage(msg[:0])
-			if err != nil {
-				t.err = err
-
-				return
-			}
-
-			u := AggTradeUpdate{}
-			err = json.Unmarshal(data, &u)
-			if err != nil {
-				t.err = err
-
-				return
-			}
-			updates <- u
+func (t *AggTrades) Stream() <-chan *AggTradeUpdate {
+	updates := make(chan *AggTradeUpdate)
+	cb := func(data []byte) error {
+		u := &AggTradeUpdate{}
+		if err := json.Unmarshal(data, u); err != nil {
+			return err
 		}
-	}()
+		updates <- u
+
+		return nil
+	}
+	go t.stream(func() {
+		close(updates)
+	}, cb)
 
 	return updates
 }
 
 // Trades is a wrapper for trades websocket
 type Trades struct {
-	wsClient
+	client
 }
 
 // Read reads a trades update message from trades websocket
 func (t *Trades) Read() (*TradeUpdate, error) {
-	buf := bytebufferpool.Get()
-	_, data, err := t.conn.ReadMessage(buf.B)
-	if err != nil {
-		return nil, err
-	}
 	r := &TradeUpdate{}
-	err = json.Unmarshal(data, r)
-	bytebufferpool.Put(buf)
+	err := t.read(r)
 
 	return r, err
 }
 
 // Stream stream a trades update message from trades websocket to channel
-func (t *Trades) Stream() <-chan TradeUpdate {
-	updates := make(chan TradeUpdate)
-	go func() {
-		defer close(updates)
-		var msg []byte
-		var data []byte
-		var err error
-		for {
-			_, data, err = t.conn.ReadMessage(msg[:0])
-			if err != nil {
-				t.err = err
-
-				return
-			}
-
-			u := TradeUpdate{}
-			err = json.Unmarshal(data, &u)
-			if err != nil {
-				t.err = err
-
-				return
-			}
-			updates <- u
+func (t *Trades) Stream() <-chan *TradeUpdate {
+	updates := make(chan *TradeUpdate)
+	cb := func(data []byte) error {
+		u := &TradeUpdate{}
+		if err := json.Unmarshal(data, u); err != nil {
+			return err
 		}
-	}()
+		updates <- u
+
+		return nil
+	}
+	go t.stream(func() {
+		close(updates)
+	}, cb)
 
 	return updates
 }
 
 // AccountInfo is a wrapper for account info websocket
 type AccountInfo struct {
-	wsClient
+	client
 }
 
 // Read reads a account info update message from account info websocket
 // Remark: The websocket is used to update two different structs, which both are flat, hence every call to this function
 // will return either one of the types initialized and the other one will be set to nil
 func (i *AccountInfo) Read() (UpdateType, interface{}, error) {
-	buf := bytebufferpool.Get()
-	defer bytebufferpool.Put(buf)
-	_, data, err := i.conn.ReadMessage(buf.B)
+	fr := websocket.AcquireFrame()
+	defer websocket.ReleaseFrame(fr)
+	fr.Reset()
+	_, err := i.ReadFrame(fr)
 	if err != nil {
 		return UpdateTypeUnknown, nil, err
 	}
 	et := EventTypeUpdate{}
-	err = json.Unmarshal(data, &et)
+	err = json.Unmarshal(fr.Payload(), &et)
 	if err != nil {
 		return UpdateTypeUnknown, nil, err
 	}
+
 	var resp interface{}
 	//nolint:exhaustive
 	switch et.EventType {
@@ -589,8 +440,9 @@ func (i *AccountInfo) Read() (UpdateType, interface{}, error) {
 	case UpdateTypeOCOReport:
 		return et.EventType, nil, nil
 	default:
-		return et.EventType, data, nil
+		return et.EventType, fr.Payload(), nil
 	}
+	err = json.Unmarshal(fr.Payload(), resp)
 
-	return et.EventType, resp, json.Unmarshal(data, resp)
+	return et.EventType, resp, err
 }

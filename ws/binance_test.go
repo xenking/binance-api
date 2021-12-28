@@ -9,7 +9,7 @@ import (
 
 	"github.com/segmentio/encoding/json"
 	"github.com/stretchr/testify/suite"
-	"github.com/xenking/fastws"
+	"github.com/xenking/websocket"
 
 	"github.com/xenking/binance-api"
 )
@@ -56,7 +56,7 @@ func (s *clientTestSuite) TestDepth_Stream() {
 	defer ws.Close()
 
 	for u := range ws.Stream() {
-		s.Require().NoError(ws.err)
+		s.Require().NoError(ws.streamErr)
 		s.Require().Equal(symbol, u.Symbol)
 		break
 	}
@@ -82,7 +82,7 @@ func (s *clientTestSuite) TestKlines_Stream() {
 	defer ws.Close()
 
 	for u := range ws.Stream() {
-		s.Require().NoError(ws.err)
+		s.Require().NoError(ws.streamErr)
 		s.Require().Equal(symbol, u.Symbol)
 		break
 	}
@@ -104,7 +104,7 @@ func (s *clientTestSuite) TestAllMarketTickers_Stream() {
 	defer ws.Close()
 
 	for u := range ws.Stream() {
-		s.Require().NoError(ws.err)
+		s.Require().NoError(ws.streamErr)
 		s.Require().NotEmpty(u)
 		break
 	}
@@ -126,7 +126,7 @@ func (s *clientTestSuite) TestAllMarketMiniTickers_Stream() {
 	defer ws.Close()
 
 	for u := range ws.Stream() {
-		s.Require().NoError(ws.err)
+		s.Require().NoError(ws.streamErr)
 		s.Require().NotEmpty(u)
 		break
 	}
@@ -148,7 +148,7 @@ func (s *clientTestSuite) TestAllBookTickers_Stream() {
 	defer ws.Close()
 
 	for u := range ws.Stream() {
-		s.Require().NoError(ws.err)
+		s.Require().NoError(ws.streamErr)
 		s.Require().NotEmpty(u)
 		break
 	}
@@ -174,7 +174,7 @@ func (s *clientTestSuite) TestIndivTickers_Stream() {
 	defer ws.Close()
 
 	for u := range ws.Stream() {
-		s.Require().NoError(ws.err)
+		s.Require().NoError(ws.streamErr)
 		s.Require().Equal(symbol, u.Symbol)
 		break
 	}
@@ -200,7 +200,7 @@ func (s *clientTestSuite) TestIndivMiniTickers_Stream() {
 	defer ws.Close()
 
 	for u := range ws.Stream() {
-		s.Require().NoError(ws.err)
+		s.Require().NoError(ws.streamErr)
 		s.Require().Equal(symbol, u.Symbol)
 		break
 	}
@@ -226,7 +226,7 @@ func (s *clientTestSuite) TestIndivBookTickers_Stream() {
 	defer ws.Close()
 
 	for u := range ws.Stream() {
-		s.Require().NoError(ws.err)
+		s.Require().NoError(ws.streamErr)
 		s.Require().Equal(symbol, u.Symbol)
 		break
 	}
@@ -252,7 +252,7 @@ func (s *clientTestSuite) TestAggTrades_Stream() {
 	defer ws.Close()
 
 	for u := range ws.Stream() {
-		s.Require().NoError(ws.err)
+		s.Require().NoError(ws.streamErr)
 		s.Require().Equal(symbol, u.Symbol)
 		break
 	}
@@ -278,7 +278,7 @@ func (s *clientTestSuite) TestTrades_Stream() {
 	defer ws.Close()
 
 	for u := range ws.Stream() {
-		s.Require().NoError(ws.err)
+		s.Require().NoError(ws.streamErr)
 		s.Require().Equal(symbol, u.Symbol)
 		break
 	}
@@ -333,15 +333,16 @@ func (s *mockedTestSuite) TestAccountInfo_Read() {
 		Asset:        "BTC",
 		BalanceDelta: "1",
 	}
-	wsHandler := func(conn *fastws.Conn) {
+	wss := websocket.Server{}
+	wss.HandleOpen(func(conn *websocket.Conn) {
 		b, err := json.Marshal(expected)
 		s.Require().NoError(err)
 
 		written, err := conn.Write(b)
 		s.Require().NoError(err)
 		s.Require().NotZero(written)
-	}
-	http.HandleFunc("/stream-key", fastws.NetUpgrade(wsHandler))
+	})
+	http.HandleFunc("/stream-key", wss.NetUpgrade)
 
 	ch := make(chan struct{}, 1)
 	go func() {

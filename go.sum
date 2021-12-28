@@ -36,7 +36,6 @@ github.com/summerwind/h2spec v2.2.1+incompatible/go.mod h1:eP7IHGVDEe9cbCxRNtmGf
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
 github.com/valyala/fasthttp v1.28.0/go.mod h1:cmWIqlu99AO/RKcp1HWaViTqc57FswJOfYYdPJBl8BA=
-github.com/valyala/fasthttp v1.30.0/go.mod h1:2rsYD01CKFrjjsvFxx75KlEUNpWNBY9JWD3K/7o2Cus=
 github.com/valyala/fasthttp v1.31.0 h1:lrauRLII19afgCs2fnWRJ4M5IkV0lo2FqA61uGkNBfE=
 github.com/valyala/fasthttp v1.31.0/go.mod h1:2rsYD01CKFrjjsvFxx75KlEUNpWNBY9JWD3K/7o2Cus=
 github.com/valyala/fastrand v1.0.0 h1:LUKT9aKer2dVQNUi3waewTbKV+7H17kvWFNKs2ObdkI=
@@ -46,8 +45,8 @@ github.com/xenking/bytebufferpool v1.1.0 h1:xbAh59Ihh81vmlK6DsSsBi/Uo8KeIxiOJkAf
 github.com/xenking/bytebufferpool v1.1.0/go.mod h1:GGTH45tL+BHIjyaGfrMWM7UT0ZCaW0a9Y3c/GfW8EDg=
 github.com/xenking/decimal v1.3.4 h1:OZZQYZiaCvTzSsdqfmAFT2wXOA138Ue35OjuCI/bucw=
 github.com/xenking/decimal v1.3.4/go.mod h1:bKaX9swc/dBJqj8Y+IDw2TN9SXat+JfpR17HREpzEsA=
-github.com/xenking/fastws v1.2.0 h1:4HGLjSlTHBKqksSlBUEOmvddoKxgfMtedqUmBnqj3uo=
-github.com/xenking/fastws v1.2.0/go.mod h1:mjmL7SsC3yUxGMwaiXKBrhCYqytwmN65XmJ5SJ2GZv0=
+github.com/xenking/websocket v1.0.0 h1:uEB79J0lgUWw/rqdNg7FomoNqAHwUNcEwx9UPA+jwXM=
+github.com/xenking/websocket v1.0.0/go.mod h1:4N+K1NDQSZW5LZgOGUf/soRKWKxUxY2xCtKshtPIIuQ=
 golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a/go.mod h1:P+XmwS30IXTQdn5tA2iutPOUgjI07+tq3H3K9MVA1s8=
 golang.org/x/net v0.0.0-20210226172049-e18ecbb05110/go.mod h1:m0MpNAwzfU5UDzcl9v0D8zg8gWTRqZa9RBIspLL5mdg=
 golang.org/x/net v0.0.0-20210510120150-4163338589ed/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
