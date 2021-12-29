@@ -13,6 +13,7 @@ func TestClient(t *testing.T) {
 }
 
 func TestClientHTTP2(t *testing.T) {
+	t.SkipNow()
 	suite.Run(t, new(clientHTTP2TestSuite))
 }
 
