@@ -5,16 +5,24 @@ import (
 	"github.com/xenking/websocket"
 )
 
-type client struct {
+type Conn struct {
 	*websocket.Client
-	streamErr error
+	Error error
 }
 
-func (c *client) Err() error {
-	return c.streamErr
+func NewConn(client *websocket.Client) Conn {
+	return Conn{Client: client}
 }
 
-func (c *client) read(value interface{}) error {
+func (c *Conn) Err() error {
+	return c.Error
+}
+
+func (c *Conn) Close() error {
+	return c.Client.Close()
+}
+
+func (c *Conn) read(value interface{}) error {
 	fr := websocket.AcquireFrame()
 	fr.Reset()
 	_, err := c.ReadFrame(fr)
@@ -29,7 +37,7 @@ func (c *client) read(value interface{}) error {
 	return err
 }
 
-func (c *client) stream(deferFunc func(), cb func(data []byte) error) {
+func (c *Conn) stream(deferFunc func(), cb func(data []byte) error) {
 	fr := websocket.AcquireFrame()
 	defer websocket.ReleaseFrame(fr)
 	defer deferFunc()
@@ -39,13 +47,13 @@ func (c *client) stream(deferFunc func(), cb func(data []byte) error) {
 		fr.Reset()
 		_, err = c.ReadFrame(fr)
 		if err != nil {
-			c.streamErr = err
+			c.Error = err
 
 			return
 		}
 		err = cb(fr.Payload())
 		if err != nil {
-			c.streamErr = err
+			c.Error = err
 
 			return
 		}
@@ -54,7 +62,7 @@ func (c *client) stream(deferFunc func(), cb func(data []byte) error) {
 
 // Depth is a wrapper for depth websocket
 type Depth struct {
-	client
+	Conn
 }
 
 // Read reads a depth update message from depth websocket
@@ -86,7 +94,7 @@ func (d *Depth) Stream() <-chan *DepthUpdate {
 
 // DepthLevel is a wrapper for depth level websocket
 type DepthLevel struct {
-	client
+	Conn
 }
 
 // Read reads a depth update message from depth level websocket
@@ -118,7 +126,7 @@ func (d *DepthLevel) Stream() <-chan *DepthLevelUpdate {
 
 // AllMarketTicker is a wrapper for all markets tickers websocket
 type AllMarketTicker struct {
-	client
+	Conn
 }
 
 // Read reads a market update message from all markets ticker websocket
@@ -150,7 +158,7 @@ func (t *AllMarketTicker) Stream() <-chan *AllMarketTickerUpdate {
 
 // IndivTicker is a wrapper for an individual ticker websocket
 type IndivTicker struct {
-	client
+	Conn
 }
 
 // Read reads a individual symbol update message from individual ticker websocket
@@ -182,7 +190,7 @@ func (t *IndivTicker) Stream() <-chan *IndivTickerUpdate {
 
 // AllMarketMiniTicker is a wrapper for all markets mini-tickers websocket
 type AllMarketMiniTicker struct {
-	client
+	Conn
 }
 
 // Read reads a market update message from all markets mini-ticker websocket
@@ -214,7 +222,7 @@ func (t *AllMarketMiniTicker) Stream() <-chan *AllMarketMiniTickerUpdate {
 
 // IndivMiniTicker is a wrapper for an individual mini-ticker websocket
 type IndivMiniTicker struct {
-	client
+	Conn
 }
 
 // Read reads a individual symbol update message from individual mini-ticker websocket
@@ -246,7 +254,7 @@ func (t *IndivMiniTicker) Stream() <-chan *IndivMiniTickerUpdate {
 
 // AllBookTicker is a wrapper for all book tickers websocket
 type AllBookTicker struct {
-	client
+	Conn
 }
 
 // Read reads a book update message from all book tickers websocket
@@ -278,7 +286,7 @@ func (t *AllBookTicker) Stream() <-chan *AllBookTickerUpdate {
 
 // IndivBookTicker is a wrapper for an individual book ticker websocket
 type IndivBookTicker struct {
-	client
+	Conn
 }
 
 // Read reads a individual book symbol update message from individual book ticker websocket
@@ -310,7 +318,7 @@ func (t *IndivBookTicker) Stream() <-chan *IndivBookTickerUpdate {
 
 // Klines is a wrapper for klines websocket
 type Klines struct {
-	client
+	Conn
 }
 
 // Read reads a klines update message from klines websocket
@@ -342,7 +350,7 @@ func (k *Klines) Stream() <-chan *KlinesUpdate {
 
 // AggTrades is a wrapper for trades websocket
 type AggTrades struct {
-	client
+	Conn
 }
 
 // Read reads a trades update message from aggregated trades websocket
@@ -374,7 +382,7 @@ func (t *AggTrades) Stream() <-chan *AggTradeUpdate {
 
 // Trades is a wrapper for trades websocket
 type Trades struct {
-	client
+	Conn
 }
 
 // Read reads a trades update message from trades websocket
@@ -406,7 +414,7 @@ func (t *Trades) Stream() <-chan *TradeUpdate {
 
 // AccountInfo is a wrapper for account info websocket
 type AccountInfo struct {
-	client
+	Conn
 }
 
 // Read reads a account info update message from account info websocket

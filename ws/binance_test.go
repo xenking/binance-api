@@ -56,7 +56,7 @@ func (s *clientTestSuite) TestDepth_Stream() {
 	defer ws.Close()
 
 	for u := range ws.Stream() {
-		s.Require().NoError(ws.streamErr)
+		s.Require().NoError(ws.Error)
 		s.Require().Equal(symbol, u.Symbol)
 		break
 	}
@@ -82,7 +82,7 @@ func (s *clientTestSuite) TestKlines_Stream() {
 	defer ws.Close()
 
 	for u := range ws.Stream() {
-		s.Require().NoError(ws.streamErr)
+		s.Require().NoError(ws.Error)
 		s.Require().Equal(symbol, u.Symbol)
 		break
 	}
@@ -104,7 +104,7 @@ func (s *clientTestSuite) TestAllMarketTickers_Stream() {
 	defer ws.Close()
 
 	for u := range ws.Stream() {
-		s.Require().NoError(ws.streamErr)
+		s.Require().NoError(ws.Error)
 		s.Require().NotEmpty(u)
 		break
 	}
@@ -126,7 +126,7 @@ func (s *clientTestSuite) TestAllMarketMiniTickers_Stream() {
 	defer ws.Close()
 
 	for u := range ws.Stream() {
-		s.Require().NoError(ws.streamErr)
+		s.Require().NoError(ws.Error)
 		s.Require().NotEmpty(u)
 		break
 	}
@@ -148,7 +148,7 @@ func (s *clientTestSuite) TestAllBookTickers_Stream() {
 	defer ws.Close()
 
 	for u := range ws.Stream() {
-		s.Require().NoError(ws.streamErr)
+		s.Require().NoError(ws.Error)
 		s.Require().NotEmpty(u)
 		break
 	}
@@ -174,7 +174,7 @@ func (s *clientTestSuite) TestIndivTickers_Stream() {
 	defer ws.Close()
 
 	for u := range ws.Stream() {
-		s.Require().NoError(ws.streamErr)
+		s.Require().NoError(ws.Error)
 		s.Require().Equal(symbol, u.Symbol)
 		break
 	}
@@ -200,7 +200,7 @@ func (s *clientTestSuite) TestIndivMiniTickers_Stream() {
 	defer ws.Close()
 
 	for u := range ws.Stream() {
-		s.Require().NoError(ws.streamErr)
+		s.Require().NoError(ws.Error)
 		s.Require().Equal(symbol, u.Symbol)
 		break
 	}
@@ -226,7 +226,7 @@ func (s *clientTestSuite) TestIndivBookTickers_Stream() {
 	defer ws.Close()
 
 	for u := range ws.Stream() {
-		s.Require().NoError(ws.streamErr)
+		s.Require().NoError(ws.Error)
 		s.Require().Equal(symbol, u.Symbol)
 		break
 	}
@@ -252,7 +252,7 @@ func (s *clientTestSuite) TestAggTrades_Stream() {
 	defer ws.Close()
 
 	for u := range ws.Stream() {
-		s.Require().NoError(ws.streamErr)
+		s.Require().NoError(ws.Error)
 		s.Require().Equal(symbol, u.Symbol)
 		break
 	}
@@ -278,7 +278,7 @@ func (s *clientTestSuite) TestTrades_Stream() {
 	defer ws.Close()
 
 	for u := range ws.Stream() {
-		s.Require().NoError(ws.streamErr)
+		s.Require().NoError(ws.Error)
 		s.Require().Equal(symbol, u.Symbol)
 		break
 	}
@@ -323,7 +323,7 @@ func (s *mockedTestSuite) SetupTest() {
 }
 
 func (s *mockedTestSuite) TestAccountInfo_Read() {
-	s.ws = NewCustomClient("ws://localhost:9844/")
+	s.ws = NewCustomClient("ws://localhost:9844/", nil)
 	ln, err := net.Listen("tcp", ":9844")
 	s.Require().NoError(err)
 
