@@ -62,6 +62,36 @@ func (s *clientTestSuite) TestDepth_Stream() {
 	}
 }
 
+func (s *clientTestSuite) TestDepthLevel_Read() {
+	const symbol = "ETHBTC"
+
+	ws, err := s.ws.DepthLevel(symbol, DepthLevel10, Frequency1000ms)
+	s.Require().NoError(err)
+	defer ws.Close()
+
+	u, err := ws.Read()
+
+	s.Require().NoError(err)
+	s.Require().Equal(len(u.Asks), 10)
+	s.Require().Equal(len(u.Bids), 10)
+}
+
+func (s *clientTestSuite) TestDepthLevel_Stream() {
+	const symbol = "ETHBTC"
+
+	ws, err := s.ws.DepthLevel(symbol, DepthLevel5, Frequency1000ms)
+	s.Require().NoError(err)
+	defer ws.Close()
+
+	for u := range ws.Stream() {
+		s.Require().NoError(ws.Error)
+		s.Require().Equal(len(u.Asks), 5)
+		s.Require().Equal(len(u.Bids), 5)
+
+		break
+	}
+}
+
 func (s *clientTestSuite) TestKlines_Read() {
 	const symbol = "ETHBTC"
 

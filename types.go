@@ -235,7 +235,7 @@ type HistoricalTradeReq struct {
 }
 
 type Trade struct {
-	ID           int    `json:"id"`
+	ID           int64  `json:"id"`
 	Price        string `json:"price"`
 	Qty          string `json:"qty"`
 	QuoteQty     string `json:"quoteQty"`
@@ -509,8 +509,8 @@ type AccountTradesReq struct {
 }
 
 type AccountTrades struct {
-	ID              int    `json:"id"`
-	OrderID         int    `json:"orderId"`
+	ID              int64  `json:"id"`
+	OrderID         uint64 `json:"orderId"`
 	OrderListID     int    `json:"orderListId"`
 	Symbol          string `json:"symbol"`
 	QuoteQty        string `json:"quoteQty"`
@@ -537,7 +537,7 @@ type AggregatedTradeReq struct {
 }
 
 type AggregatedTrade struct {
-	TradeID      int    `json:"a"` // TradeID is the aggregate trade ID
+	TradeID      int64  `json:"a"` // TradeID is the aggregate trade ID
 	Price        string `json:"p"` // Price is the trade price
 	Quantity     string `json:"q"` // Quantity is the trade quantity
 	FirstTradeID int    `json:"f"`

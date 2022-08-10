@@ -32,10 +32,19 @@ type FrequencyType string
 
 const (
 	// Frequency1000ms is default frequency
-	Frequency1000ms = "@1000ms"
+	Frequency1000ms FrequencyType = "@1000ms"
 
 	// Frequency100ms for fastest updates
-	Frequency100ms = "@100ms"
+	Frequency100ms FrequencyType = "@100ms"
+)
+
+// DepthLevelType is a level for DepthLevel update
+type DepthLevelType string
+
+const (
+	DepthLevel5  DepthLevelType = "5"
+	DepthLevel10 DepthLevelType = "10"
+	DepthLevel20 DepthLevelType = "20"
 )
 
 // IndivTickerUpdate represents incoming ticker websocket feed

@@ -1,6 +1,7 @@
-package binance
+package binance_test
 
 import (
+	"github.com/xenking/binance-api"
 	"math/rand"
 	"testing"
 
@@ -22,11 +23,11 @@ func TestMockClient(t *testing.T) {
 
 type baseTestSuite struct {
 	suite.Suite
-	api *Client
+	api *binance.Client
 }
 
 func (s *baseTestSuite) SetupSuite() {
-	s.api = NewClient("", "")
+	s.api = binance.NewClient("", "")
 }
 
 type clientTestSuite struct {
@@ -43,27 +44,32 @@ func (s *clientTestSuite) TestTime() {
 }
 
 func (s *clientTestSuite) TestTicker() {
-	_, e := s.api.Ticker(&TickerReq{"LTCBTC"})
+	_, e := s.api.Ticker(&binance.TickerReq{"LTCBTC"})
+	s.Require().NoError(e)
+}
+
+func (s *clientTestSuite) TestTickers() {
+	_, e := s.api.Tickers()
 	s.Require().NoError(e)
 }
 
 func (s *clientTestSuite) TestDepth() {
-	_, e := s.api.Depth(&DepthReq{Symbol: "SNMBTC", Limit: 5})
+	_, e := s.api.Depth(&binance.DepthReq{Symbol: "SNMBTC", Limit: 5})
 	s.Require().NoError(e)
 }
 
 func (s *clientTestSuite) TestTrades() {
-	_, e := s.api.Trades(&TradeReq{Symbol: "SNMBTC"})
+	_, e := s.api.Trades(&binance.TradeReq{Symbol: "SNMBTC"})
 	s.Require().NoError(e)
 }
 
 func (s *clientTestSuite) TestAggregatedTrades() {
-	_, e := s.api.AggregatedTrades(&AggregatedTradeReq{Symbol: "SNMBTC"})
+	_, e := s.api.AggregatedTrades(&binance.AggregatedTradeReq{Symbol: "SNMBTC"})
 	s.Require().NoError(e)
 }
 
 func (s *clientTestSuite) TestKlines() {
-	resp, e := s.api.Klines(&KlinesReq{Symbol: "SNMBTC", Interval: KlineInterval1hour, Limit: 5})
+	resp, e := s.api.Klines(&binance.KlinesReq{Symbol: "SNMBTC", Interval: binance.KlineInterval1hour, Limit: 5})
 	s.Require().NoError(e)
 	s.Require().Len(resp, 5)
 }
@@ -72,14 +78,35 @@ func (s *clientTestSuite) TestAllBookTickers() {
 	_, e := s.api.BookTickers()
 	s.Require().NoError(e)
 }
+func (s *clientTestSuite) TestBookTicker() {
+	_, e := s.api.BookTicker(&binance.BookTickerReq{Symbol: "SNMBTC"})
+	s.Require().NoError(e)
+}
+
+func (s *clientTestSuite) TestAvgPrice() {
+	_, e := s.api.AvgPrice(&binance.AvgPriceReq{Symbol: "SNMBTC"})
+	s.Require().NoError(e)
+}
 
 func (s *clientTestSuite) TestPrices() {
 	_, e := s.api.Prices()
 	s.Require().NoError(e)
 }
 
+func (s *clientTestSuite) TestPrice() {
+	_, e := s.api.Price(&binance.TickerPriceReq{Symbol: "SNMBTC"})
+	s.Require().NoError(e)
+}
+
 func (s *clientTestSuite) TestExchangeInfo() {
 	info, err := s.api.ExchangeInfo()
+	s.Require().NoError(err)
+	s.Require().NotNil(info)
+	s.Require().NotEmpty(info.Symbols)
+}
+
+func (s *clientTestSuite) TestExchangeInfoSymbol() {
+	info, err := s.api.ExchangeInfoSymbol(&binance.ExchangeInfoReq{Symbol: "SNMBTC"})
 	s.Require().NoError(err)
 	s.Require().NotNil(info)
 	s.Require().NotEmpty(info.Symbols)
@@ -91,7 +118,7 @@ type clientHTTP2TestSuite struct {
 
 func (s *clientHTTP2TestSuite) SetupSuite() {
 	var err error
-	s.api, err = NewClientHTTP2("", "")
+	s.api, err = binance.NewClientHTTP2("", "")
 	s.Require().NoError(err)
 }
 
@@ -127,19 +154,39 @@ type mockedTestSuite struct {
 
 func (s *mockedTestSuite) SetupSuite() {
 	s.mock = &mockedClient{}
-	s.api = NewCustomClient(s.mock)
+	s.api = binance.NewCustomClient(s.mock)
 }
 
 func (s *mockedTestSuite) SetupTest() {
 	s.mock.Response = nil
 }
 
-func (s *mockedTestSuite) TestNewOrder() {
-	var expected *OrderRespAck
+func (s *mockedTestSuite) TestHistoricalTrades() {
+	var expected []*binance.Trade
+
 	s.mock.Response = func(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error) {
-		s.Require().IsType(&OrderReq{}, data)
-		req := data.(*OrderReq)
-		expected = &OrderRespAck{
+		s.Require().IsType(&binance.HistoricalTradeReq{}, data)
+		expected = []*binance.Trade{
+			{
+				ID:       rand.Int63(),
+				Price:    "0.1",
+				Qty:      "1",
+				QuoteQty: "1",
+				Time:     rand.Int63(),
+			},
+		}
+		return json.Marshal(expected)
+	}
+	_, e := s.api.HistoricalTrades(&binance.HistoricalTradeReq{Symbol: "SNMBTC", Limit: 5})
+	s.Require().NoError(e)
+}
+
+func (s *mockedTestSuite) TestNewOrder() {
+	var expected *binance.OrderRespAck
+	s.mock.Response = func(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error) {
+		s.Require().IsType(&binance.OrderReq{}, data)
+		req := data.(*binance.OrderReq)
+		expected = &binance.OrderRespAck{
 			Symbol:       req.Symbol,
 			OrderID:      rand.Uint64(),
 			TransactTime: rand.Uint64(),
@@ -147,24 +194,70 @@ func (s *mockedTestSuite) TestNewOrder() {
 		return json.Marshal(expected)
 	}
 
-	actual, e := s.api.NewOrder(&OrderReq{
-		Symbol:      "SNMBTC",
-		Side:        OrderSideSell,
-		Type:        OrderTypeLimit,
-		TimeInForce: TimeInForceGTC,
-		Quantity:    "1",
-		Price:       "0.1",
+	actual, e := s.api.NewOrder(&binance.OrderReq{
+		Symbol:   "SNMBTC",
+		Side:     binance.OrderSideSell,
+		Type:     binance.OrderTypeLimit,
+		Quantity: "1",
+		Price:    "0.1",
 	})
 	s.Require().NoError(e)
 	s.Require().EqualValues(expected, actual)
 }
 
-func (s *mockedTestSuite) TestNewOrderResult() {
-	var expected *OrderRespResult
+func (s *mockedTestSuite) TestNewMarketOrder() {
+	var expected *binance.OrderRespAck
 	s.mock.Response = func(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error) {
-		s.Require().IsType(&OrderReq{}, data)
-		req := data.(*OrderReq)
-		expected = &OrderRespResult{
+		s.Require().IsType(&binance.OrderReq{}, data)
+		req := data.(*binance.OrderReq)
+		expected = &binance.OrderRespAck{
+			Symbol:       req.Symbol,
+			OrderID:      rand.Uint64(),
+			TransactTime: rand.Uint64(),
+		}
+		return json.Marshal(expected)
+	}
+
+	actual, e := s.api.NewOrder(&binance.OrderReq{
+		Symbol:   "SNMBTC",
+		Side:     binance.OrderSideSell,
+		Type:     binance.OrderTypeMarket,
+		Quantity: "1",
+		Price:    "0.1",
+	})
+	s.Require().NoError(e)
+	s.Require().EqualValues(expected, actual)
+}
+
+func (s *mockedTestSuite) TestNewOrderTest() {
+	var expected *binance.OrderRespAck
+	s.mock.Response = func(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error) {
+		s.Require().IsType(&binance.OrderReq{}, data)
+		req := data.(*binance.OrderReq)
+		expected = &binance.OrderRespAck{
+			Symbol:       req.Symbol,
+			OrderID:      rand.Uint64(),
+			TransactTime: rand.Uint64(),
+		}
+		return json.Marshal(expected)
+	}
+
+	e := s.api.NewOrderTest(&binance.OrderReq{
+		Symbol:   "SNMBTC",
+		Side:     binance.OrderSideSell,
+		Type:     binance.OrderTypeLimit,
+		Quantity: "1",
+		Price:    "0.1",
+	})
+	s.Require().NoError(e)
+}
+
+func (s *mockedTestSuite) TestNewOrderResult() {
+	var expected *binance.OrderRespResult
+	s.mock.Response = func(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error) {
+		s.Require().IsType(&binance.OrderReq{}, data)
+		req := data.(*binance.OrderReq)
+		expected = &binance.OrderRespResult{
 			Symbol:              req.Symbol,
 			OrderID:             rand.Uint64(),
 			TransactTime:        rand.Uint64(),
@@ -172,7 +265,7 @@ func (s *mockedTestSuite) TestNewOrderResult() {
 			OrigQty:             req.Quantity,
 			ExecutedQty:         "0",
 			CummulativeQuoteQty: req.QuoteQuantity,
-			Status:              OrderStatusNew,
+			Status:              binance.OrderStatusNew,
 			TimeInForce:         string(req.TimeInForce),
 			Type:                req.Type,
 			Side:                req.Side,
@@ -180,11 +273,11 @@ func (s *mockedTestSuite) TestNewOrderResult() {
 		return json.Marshal(expected)
 	}
 
-	actual, e := s.api.NewOrderResult(&OrderReq{
+	actual, e := s.api.NewOrderResult(&binance.OrderReq{
 		Symbol:      "SNMBTC",
-		Side:        OrderSideSell,
-		Type:        OrderTypeLimit,
-		TimeInForce: TimeInForceGTC,
+		Side:        binance.OrderSideSell,
+		Type:        binance.OrderTypeLimit,
+		TimeInForce: binance.TimeInForceGTC,
 		Quantity:    "1",
 		Price:       "0.1",
 	})
@@ -193,11 +286,11 @@ func (s *mockedTestSuite) TestNewOrderResult() {
 }
 
 func (s *mockedTestSuite) TestNewOrderFull() {
-	var expected *OrderRespFull
+	var expected *binance.OrderRespFull
 	s.mock.Response = func(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error) {
-		s.Require().IsType(&OrderReq{}, data)
-		req := data.(*OrderReq)
-		expected = &OrderRespFull{
+		s.Require().IsType(&binance.OrderReq{}, data)
+		req := data.(*binance.OrderReq)
+		expected = &binance.OrderRespFull{
 			Symbol:              req.Symbol,
 			OrderID:             rand.Uint64(),
 			TransactTime:        rand.Uint64(),
@@ -205,7 +298,7 @@ func (s *mockedTestSuite) TestNewOrderFull() {
 			OrigQty:             req.Quantity,
 			ExecutedQty:         "0",
 			CummulativeQuoteQty: req.QuoteQuantity,
-			Status:              OrderStatusNew,
+			Status:              binance.OrderStatusNew,
 			TimeInForce:         string(req.TimeInForce),
 			Type:                req.Type,
 			Side:                req.Side,
@@ -213,11 +306,11 @@ func (s *mockedTestSuite) TestNewOrderFull() {
 		return json.Marshal(expected)
 	}
 
-	_, e := s.api.NewOrderFull(&OrderReq{
+	_, e := s.api.NewOrderFull(&binance.OrderReq{
 		Symbol:      "SNMBTC",
-		Side:        OrderSideSell,
-		Type:        OrderTypeLimit,
-		TimeInForce: TimeInForceGTC,
+		Side:        binance.OrderSideSell,
+		Type:        binance.OrderTypeLimit,
+		TimeInForce: binance.TimeInForceGTC,
 		Quantity:    "1",
 		Price:       "0.1",
 	})
@@ -226,37 +319,37 @@ func (s *mockedTestSuite) TestNewOrderFull() {
 
 func (s *mockedTestSuite) TestQueryCancelOrder() {
 	s.mock.Response = func(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error) {
-		s.Require().IsType(&OrderReq{}, data)
-		req := data.(*OrderReq)
-		return json.Marshal(&OrderRespAck{
+		s.Require().IsType(&binance.OrderReq{}, data)
+		req := data.(*binance.OrderReq)
+		return json.Marshal(&binance.OrderRespAck{
 			Symbol:       req.Symbol,
 			OrderID:      rand.Uint64(),
 			TransactTime: rand.Uint64(),
 		})
 	}
-	createReq := &OrderReq{
+	createReq := &binance.OrderReq{
 		Symbol:      "SNMBTC",
-		Side:        OrderSideSell,
-		Type:        OrderTypeLimit,
-		TimeInForce: TimeInForceGTC,
+		Side:        binance.OrderSideSell,
+		Type:        binance.OrderTypeLimit,
+		TimeInForce: binance.TimeInForceGTC,
 		Quantity:    "1",
 		Price:       "0.1",
 	}
 	resp, e := s.api.NewOrder(createReq)
 	s.Require().NoError(e)
 
-	var expectedQuery *QueryOrder
+	var expectedQuery *binance.QueryOrder
 	s.mock.Response = func(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error) {
-		s.Require().IsType(&QueryOrderReq{}, data)
-		req := data.(*QueryOrderReq)
-		expectedQuery = &QueryOrder{
+		s.Require().IsType(&binance.QueryOrderReq{}, data)
+		req := data.(*binance.QueryOrderReq)
+		expectedQuery = &binance.QueryOrder{
 			Symbol:              req.Symbol,
 			OrderID:             req.OrderID,
 			Price:               createReq.Price,
 			OrigQty:             createReq.Quantity,
 			ExecutedQty:         "0",
 			CummulativeQuoteQty: createReq.Quantity,
-			Status:              OrderStatusNew,
+			Status:              binance.OrderStatusNew,
 			TimeInForce:         createReq.TimeInForce,
 			Type:                createReq.Type,
 			Side:                createReq.Side,
@@ -266,17 +359,17 @@ func (s *mockedTestSuite) TestQueryCancelOrder() {
 		}
 		return json.Marshal(expectedQuery)
 	}
-	actualQuery, e := s.api.QueryOrder(&QueryOrderReq{
+	actualQuery, e := s.api.QueryOrder(&binance.QueryOrderReq{
 		Symbol:  "SNMBTC",
 		OrderID: resp.OrderID,
 	})
 	s.Require().NoError(e)
 	s.Require().EqualValues(expectedQuery, actualQuery)
 
-	var expectedCancel *CancelOrder
+	var expectedCancel *binance.CancelOrder
 	s.mock.Response = func(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error) {
-		s.Require().IsType(&CancelOrderReq{}, data)
-		expectedCancel = &CancelOrder{
+		s.Require().IsType(&binance.CancelOrderReq{}, data)
+		expectedCancel = &binance.CancelOrder{
 			Symbol:              actualQuery.Symbol,
 			OrderID:             actualQuery.OrderID,
 			Price:               actualQuery.Price,
@@ -290,7 +383,7 @@ func (s *mockedTestSuite) TestQueryCancelOrder() {
 		}
 		return json.Marshal(expectedCancel)
 	}
-	actualCancel, e := s.api.CancelOrder(&CancelOrderReq{
+	actualCancel, e := s.api.CancelOrder(&binance.CancelOrderReq{
 		Symbol:  "SNMBTC",
 		OrderID: resp.OrderID,
 	})
@@ -301,7 +394,7 @@ func (s *mockedTestSuite) TestQueryCancelOrder() {
 func (s *mockedTestSuite) TestDataStream() {
 	s.mock.Response = func(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error) {
 		s.Require().Nil(data)
-		return json.Marshal(&DatastreamReq{
+		return json.Marshal(&binance.DatastreamReq{
 			ListenKey: "stream-key",
 		})
 	}
@@ -309,7 +402,7 @@ func (s *mockedTestSuite) TestDataStream() {
 	s.Require().NoError(err)
 	s.Require().Equal("stream-key", key)
 	s.mock.Response = func(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error) {
-		s.Require().IsType(DatastreamReq{}, data)
+		s.Require().IsType(binance.DatastreamReq{}, data)
 		return nil, nil
 	}
 	s.Require().NoError(s.api.DataStreamKeepAlive(key))
@@ -317,21 +410,21 @@ func (s *mockedTestSuite) TestDataStream() {
 }
 
 func (s *mockedTestSuite) TestAllOrders() {
-	var expected []*QueryOrder
+	var expected []*binance.QueryOrder
 	s.mock.Response = func(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error) {
-		s.Require().IsType(&AllOrdersReq{}, data)
-		req := data.(*AllOrdersReq)
-		expected = append(expected, &QueryOrder{
+		s.Require().IsType(&binance.AllOrdersReq{}, data)
+		req := data.(*binance.AllOrdersReq)
+		expected = append(expected, &binance.QueryOrder{
 			Symbol:              req.Symbol,
 			OrderID:             req.OrderID,
 			Price:               "0.1",
 			OrigQty:             "1",
 			ExecutedQty:         "0",
 			CummulativeQuoteQty: "1",
-			Status:              OrderStatusNew,
-			TimeInForce:         TimeInForceGTC,
-			Type:                OrderTypeLimit,
-			Side:                OrderSideSell,
+			Status:              binance.OrderStatusNew,
+			TimeInForce:         binance.TimeInForceGTC,
+			Type:                binance.OrderTypeLimit,
+			Side:                binance.OrderSideSell,
 			Time:                rand.Uint64(),
 			UpdateTime:          rand.Uint64(),
 			OrigQuoteOrderQty:   "1",
@@ -339,27 +432,27 @@ func (s *mockedTestSuite) TestAllOrders() {
 		return json.Marshal(expected)
 	}
 
-	actual, e := s.api.AllOrders(&AllOrdersReq{Symbol: "SNMBTC"})
+	actual, e := s.api.AllOrders(&binance.AllOrdersReq{Symbol: "SNMBTC"})
 	s.Require().NoError(e)
 	s.Require().EqualValues(expected, actual)
 }
 
 func (s *mockedTestSuite) TestOpenOrders() {
-	var expected []*QueryOrder
+	var expected []*binance.QueryOrder
 	s.mock.Response = func(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error) {
-		s.Require().IsType(&OpenOrdersReq{}, data)
-		req := data.(*OpenOrdersReq)
-		expected = append(expected, &QueryOrder{
+		s.Require().IsType(&binance.OpenOrdersReq{}, data)
+		req := data.(*binance.OpenOrdersReq)
+		expected = append(expected, &binance.QueryOrder{
 			Symbol:              req.Symbol,
 			OrderID:             rand.Uint64(),
 			Price:               "0.1",
 			OrigQty:             "1",
 			ExecutedQty:         "0",
 			CummulativeQuoteQty: "1",
-			Status:              OrderStatusNew,
-			TimeInForce:         TimeInForceGTC,
-			Type:                OrderTypeLimit,
-			Side:                OrderSideSell,
+			Status:              binance.OrderStatusNew,
+			TimeInForce:         binance.TimeInForceGTC,
+			Type:                binance.OrderTypeLimit,
+			Side:                binance.OrderSideSell,
 			Time:                rand.Uint64(),
 			UpdateTime:          rand.Uint64(),
 			OrigQuoteOrderQty:   "1",
@@ -367,41 +460,41 @@ func (s *mockedTestSuite) TestOpenOrders() {
 		return json.Marshal(expected)
 	}
 
-	actual, e := s.api.OpenOrders(&OpenOrdersReq{Symbol: "SNMBTC"})
+	actual, e := s.api.OpenOrders(&binance.OpenOrdersReq{Symbol: "SNMBTC"})
 	s.Require().NoError(e)
 	s.Require().EqualValues(expected, actual)
 }
 
 func (s *mockedTestSuite) TestCancelOpenOrders() {
-	var expected []*CancelOrder
+	var expected []*binance.CancelOrder
 	s.mock.Response = func(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error) {
-		s.Require().IsType(&CancelOpenOrdersReq{}, data)
-		req := data.(*CancelOpenOrdersReq)
-		expected = append(expected, &CancelOrder{
+		s.Require().IsType(&binance.CancelOpenOrdersReq{}, data)
+		req := data.(*binance.CancelOpenOrdersReq)
+		expected = append(expected, &binance.CancelOrder{
 			Symbol:              req.Symbol,
 			OrderID:             rand.Uint64(),
 			Price:               "0.1",
 			OrigQty:             "1",
 			ExecutedQty:         "0",
 			CummulativeQuoteQty: "1",
-			Status:              OrderStatusNew,
-			TimeInForce:         TimeInForceGTC,
-			Type:                OrderTypeLimit,
-			Side:                OrderSideSell,
+			Status:              binance.OrderStatusNew,
+			TimeInForce:         binance.TimeInForceGTC,
+			Type:                binance.OrderTypeLimit,
+			Side:                binance.OrderSideSell,
 		})
 		return json.Marshal(expected)
 	}
 
-	actual, e := s.api.CancelOpenOrders(&CancelOpenOrdersReq{Symbol: "SNMBTC"})
+	actual, e := s.api.CancelOpenOrders(&binance.CancelOpenOrdersReq{Symbol: "SNMBTC"})
 	s.Require().NoError(e)
 	s.Require().EqualValues(expected, actual)
 }
 
 func (s *mockedTestSuite) TestAccount() {
-	var expected *AccountInfo
+	var expected *binance.AccountInfo
 	s.mock.Response = func(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error) {
 		s.Require().Nil(data)
-		expected = &AccountInfo{
+		expected = &binance.AccountInfo{
 			MakerCommission:  15,
 			TakerCommission:  15,
 			BuyerCommission:  0,
@@ -409,8 +502,8 @@ func (s *mockedTestSuite) TestAccount() {
 			CanTrade:         true,
 			CanWithdraw:      true,
 			CanDeposit:       true,
-			AccountType:      AccountTypeSpot,
-			Balances: []*Balance{{
+			AccountType:      binance.AccountTypeSpot,
+			Balances: []*binance.Balance{{
 				Asset:  "SNM",
 				Free:   "1",
 				Locked: "",
@@ -420,6 +513,29 @@ func (s *mockedTestSuite) TestAccount() {
 	}
 
 	actual, e := s.api.Account()
+	s.Require().NoError(e)
+	s.Require().EqualValues(expected, actual)
+}
+
+func (s *mockedTestSuite) TestAccountTrades() {
+	var expected *binance.AccountTrades
+	s.mock.Response = func(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error) {
+		s.Require().IsType(&binance.AccountTradesReq{}, data)
+		req := data.(*binance.AccountTradesReq)
+		expected = &binance.AccountTrades{
+			Symbol:   req.Symbol,
+			OrderID:  rand.Uint64(),
+			QuoteQty: "1",
+			Price:    "0.1",
+			Qty:      "1",
+			Time:     rand.Uint64(),
+		}
+		return json.Marshal(expected)
+	}
+
+	actual, e := s.api.AccountTrades(&binance.AccountTradesReq{
+		Symbol: "SNMBTC",
+	})
 	s.Require().NoError(e)
 	s.Require().EqualValues(expected, actual)
 }

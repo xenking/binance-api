@@ -49,12 +49,12 @@ func (c *Client) Depth(symbol string, frequency FrequencyType) (*Depth, error) {
 }
 
 // DepthLevel opens websocket with depth updates for the given symbol (eg @100ms frequency)
-func (c *Client) DepthLevel(symbol, level string, frequency FrequencyType) (*DepthLevel, error) {
+func (c *Client) DepthLevel(symbol string, level DepthLevelType, frequency FrequencyType) (*DepthLevel, error) {
 	var b strings.Builder
 	b.WriteString(c.Prefix)
 	b.WriteString(strings.ToLower(symbol))
 	b.WriteString("@depth")
-	b.WriteString(level)
+	b.WriteString(string(level))
 	b.WriteString(string(frequency))
 
 	var wsc *websocket.Client
