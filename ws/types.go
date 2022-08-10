@@ -3,7 +3,7 @@ package ws
 import (
 	"bytes"
 
-	"github.com/pkg/errors"
+	"github.com/go-faster/errors"
 
 	"github.com/xenking/binance-api"
 )

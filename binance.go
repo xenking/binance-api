@@ -6,8 +6,9 @@ import (
 )
 
 const (
-	// BaseHost for binance addresses
-	BaseHost         = "api.binance.com:443"
+	// BaseHostPort for binance addresses
+	BaseHostPort     = "api.binance.com:443"
+	BaseHost         = "api.binance.com"
 	DefaultUserAgent = "Binance/client"
 )
 

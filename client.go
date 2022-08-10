@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
+	"crypto/tls"
 	"encoding/hex"
 	"hash"
 	"strconv"
@@ -12,12 +13,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dgrr/http2"
+	"github.com/go-faster/errors"
 	"github.com/google/go-querystring/query"
-	"github.com/pkg/errors"
 	"github.com/segmentio/encoding/json"
 	"github.com/valyala/fasthttp"
 	"github.com/xenking/bytebufferpool"
+	"github.com/xenking/http2"
 )
 
 type RestClient interface {
@@ -112,7 +113,8 @@ func newHTTP2Client() (*fasthttp.HostClient, error) {
 		DisablePathNormalizing:        false,
 		IsTLS:                         true,
 		Name:                          DefaultUserAgent,
-		Addr:                          BaseHost,
+		Addr:                          BaseHostPort,
+		TLSConfig:                     &tls.Config{ServerName: BaseHost},
 	}
 
 	if err := http2.ConfigureClient(hc, http2.ClientOpts{}); err != nil {
@@ -130,7 +132,8 @@ func newHTTPClient() *fasthttp.HostClient {
 		DisablePathNormalizing:        false,
 		IsTLS:                         true,
 		Name:                          DefaultUserAgent,
-		Addr:                          BaseHost,
+		Addr:                          BaseHostPort,
+		TLSConfig:                     &tls.Config{ServerName: BaseHost},
 	}
 }
 
@@ -181,9 +184,6 @@ func (c *restClient) Do(method, endpoint string, data interface{}, sign, stream 
 	// Remark: GET requests payload is as a query parameters
 	// POST requests payload is given as a body
 	req := fasthttp.AcquireRequest()
-	req.Header.SetHost(BaseHost)
-	req.URI().SetScheme(DefaultSchema)
-	req.Header.SetMethod(method)
 
 	if method == fasthttp.MethodGet {
 		b.Grow(len(pb) + 1)
@@ -194,6 +194,9 @@ func (c *restClient) Do(method, endpoint string, data interface{}, sign, stream 
 		req.SetBody(pb)
 	}
 	req.SetRequestURI(b.String())
+	req.Header.SetHost(BaseHost)
+	req.URI().SetScheme(DefaultSchema)
+	req.Header.SetMethod(method)
 
 	if sign || stream {
 		req.Header.Add(HeaderAPIKey, c.apikey)

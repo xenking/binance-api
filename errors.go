@@ -1,7 +1,7 @@
 package binance
 
 import (
-	"github.com/pkg/errors"
+	"github.com/go-faster/errors"
 	"github.com/segmentio/encoding/json"
 )
 
