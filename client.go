@@ -25,9 +25,9 @@ type RestClient interface {
 	Do(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error)
 
 	SetWindow(window int)
-	UsedWeight() map[string]int
-	OrderCount() map[string]int
-	RetryAfter() int
+	UsedWeight() map[string]int64
+	OrderCount() map[string]int64
+	RetryAfter() int64
 }
 
 const DefaultResponseWindow = 5000
@@ -89,7 +89,7 @@ type restClient struct {
 	window     int
 	usedWeight sync.Map
 	orderCount sync.Map
-	retryAfter atomic.Value
+	retryAfter int64
 }
 
 const (
@@ -158,8 +158,8 @@ func (c *restClient) Do(method, endpoint string, data interface{}, sign, stream 
 	// Remark: This is done only to routes with actual data
 	if sign {
 		buf := bytebufferpool.Get()
-		pb = append(pb, "&timestamp="...)                                                               //nolint:makezero
-		pb = append(pb, strconv.AppendInt(buf.B, time.Now().UnixNano()/int64(time.Millisecond), 10)...) //nolint:makezero
+		pb = append(pb, "&timestamp="...)                                        //nolint:makezero
+		pb = append(pb, strconv.AppendInt(buf.B, time.Now().UnixMilli(), 10)...) //nolint:makezero
 
 		buf.Reset()
 		pb = append(pb, "&recvWindow="...)                                //nolint:makezero
@@ -234,7 +234,7 @@ func (c *restClient) Do(method, endpoint string, data interface{}, sign, stream 
 		if h := getHeader(pb, HeaderRetryAfter); len(h) > 2 {
 			retry, parseErr := fasthttp.ParseUint(h[2:])
 			if parseErr == nil {
-				c.retryAfter.Store(retry)
+				atomic.StoreInt64(&c.retryAfter, int64(retry))
 			}
 		}
 
@@ -292,13 +292,13 @@ func (c *restClient) SetWindow(window int) {
 	c.window = window
 }
 
-func (c *restClient) UsedWeight() map[string]int {
-	res := make(map[string]int)
+func (c *restClient) UsedWeight() map[string]int64 {
+	res := make(map[string]int64)
 	c.usedWeight.Range(func(k, v interface{}) bool {
 		key, ok1 := k.(string)
 		value, ok2 := v.(int)
 		if ok1 && ok2 {
-			res[key] = value
+			res[key] = int64(value)
 		}
 
 		return true
@@ -307,13 +307,13 @@ func (c *restClient) UsedWeight() map[string]int {
 	return res
 }
 
-func (c *restClient) OrderCount() map[string]int {
-	res := make(map[string]int)
+func (c *restClient) OrderCount() map[string]int64 {
+	res := make(map[string]int64)
 	c.usedWeight.Range(func(k, v interface{}) bool {
 		key, ok1 := k.(string)
 		value, ok2 := v.(int)
 		if ok1 && ok2 {
-			res[key] = value
+			res[key] = int64(value)
 		}
 
 		return true
@@ -322,11 +322,6 @@ func (c *restClient) OrderCount() map[string]int {
 	return res
 }
 
-func (c *restClient) RetryAfter() int {
-	retry, ok := c.retryAfter.Load().(int)
-	if ok {
-		return retry
-	}
-
-	return 0
+func (c *restClient) RetryAfter() int64 {
+	return atomic.LoadInt64(&c.retryAfter)
 }

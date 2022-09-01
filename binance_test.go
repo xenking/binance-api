@@ -127,15 +127,15 @@ type mockedClient struct {
 	window   int
 }
 
-func (m *mockedClient) UsedWeight() map[string]int {
+func (m *mockedClient) UsedWeight() map[string]int64 {
 	panic("not used")
 }
 
-func (m *mockedClient) OrderCount() map[string]int {
+func (m *mockedClient) OrderCount() map[string]int64 {
 	panic("not used")
 }
 
-func (m *mockedClient) RetryAfter() int {
+func (m *mockedClient) RetryAfter() int64 {
 	panic("not used")
 }
 
@@ -387,6 +387,99 @@ func (s *mockedTestSuite) TestQueryCancelOrder() {
 		Symbol:  "SNMBTC",
 		OrderID: resp.OrderID,
 	})
+	s.Require().NoError(e)
+	s.Require().EqualValues(expectedCancel, actualCancel)
+}
+
+func (s *mockedTestSuite) TestCancelReplaceOrder() {
+	s.mock.Response = func(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error) {
+		s.Require().IsType(&binance.OrderReq{}, data)
+		req := data.(*binance.OrderReq)
+		return json.Marshal(&binance.OrderRespAck{
+			Symbol:       req.Symbol,
+			OrderID:      rand.Uint64(),
+			TransactTime: rand.Uint64(),
+		})
+	}
+	createReq := &binance.OrderReq{
+		Symbol:      "SNMBTC",
+		Side:        binance.OrderSideSell,
+		Type:        binance.OrderTypeLimit,
+		TimeInForce: binance.TimeInForceGTC,
+		Quantity:    "1",
+		Price:       "0.1",
+	}
+	resp, e := s.api.NewOrder(createReq)
+	s.Require().NoError(e)
+
+	var expectedQuery *binance.QueryOrder
+	s.mock.Response = func(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error) {
+		s.Require().IsType(&binance.QueryOrderReq{}, data)
+		req := data.(*binance.QueryOrderReq)
+		expectedQuery = &binance.QueryOrder{
+			Symbol:              req.Symbol,
+			OrderID:             req.OrderID,
+			Price:               createReq.Price,
+			OrigQty:             createReq.Quantity,
+			ExecutedQty:         "0",
+			CummulativeQuoteQty: createReq.Quantity,
+			Status:              binance.OrderStatusNew,
+			TimeInForce:         createReq.TimeInForce,
+			Type:                createReq.Type,
+			Side:                createReq.Side,
+			Time:                rand.Uint64(),
+			UpdateTime:          rand.Uint64(),
+			OrigQuoteOrderQty:   createReq.QuoteQuantity,
+		}
+		return json.Marshal(expectedQuery)
+	}
+	actualQuery, e := s.api.QueryOrder(&binance.QueryOrderReq{
+		Symbol:  "SNMBTC",
+		OrderID: resp.OrderID,
+	})
+	s.Require().NoError(e)
+	s.Require().EqualValues(expectedQuery, actualQuery)
+
+	req := &binance.CancelReplaceOrderReq{
+		OrderReq:      *createReq,
+		CancelOrderID: resp.OrderID,
+	}
+
+	var expectedCancel *binance.CancelReplaceOrder
+	s.mock.Response = func(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error) {
+		s.Require().IsType(&binance.CancelReplaceOrderReq{}, data)
+		expectedCancel = &binance.CancelReplaceOrder{
+			CancelStatus:   binance.CancelReplaceResultSuccess,
+			NewOrderResult: binance.CancelReplaceResultSuccess,
+			CancelResponse: binance.CancelOrder{
+				Symbol:              actualQuery.Symbol,
+				OrderID:             actualQuery.OrderID,
+				Price:               actualQuery.Price,
+				OrigQty:             actualQuery.OrigQty,
+				ExecutedQty:         actualQuery.ExecutedQty,
+				CummulativeQuoteQty: actualQuery.CummulativeQuoteQty,
+				Status:              actualQuery.Status,
+				TimeInForce:         actualQuery.TimeInForce,
+				Type:                actualQuery.Type,
+				Side:                actualQuery.Side,
+			},
+			NewOrderResponse: &binance.OrderRespFull{
+				Symbol:              req.Symbol,
+				OrderID:             rand.Uint64(),
+				TransactTime:        rand.Uint64(),
+				Price:               req.Price,
+				OrigQty:             req.Quantity,
+				ExecutedQty:         "0",
+				CummulativeQuoteQty: req.QuoteQuantity,
+				Status:              binance.OrderStatusNew,
+				TimeInForce:         string(req.TimeInForce),
+				Type:                req.Type,
+				Side:                req.Side,
+			},
+		}
+		return json.Marshal(expectedCancel)
+	}
+	actualCancel, e := s.api.CancelReplaceOrder(req)
 	s.Require().NoError(e)
 	s.Require().EqualValues(expectedCancel, actualCancel)
 }

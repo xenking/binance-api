@@ -6,13 +6,14 @@ import (
 )
 
 var (
-	ErrNilRequest   = errors.New("request is nil")
-	ErrEmptySymbol  = errors.New("symbol are missing")
-	ErrEmptyOrderID = errors.New("order id must be set")
-	ErrEmptyLimit   = errors.New("empty price or quantity")
-	ErrEmptyMarket  = errors.New("quantity or quote quantity expected")
-	ErrNilUnmarshal = errors.New("UnmarshalJSON on nil pointer")
-	ErrInvalidJSON  = errors.New("invalid json")
+	ErrNilRequest      = errors.New("request is nil")
+	ErrEmptySymbol     = errors.New("symbol are missing")
+	ErrEmptyOrderID    = errors.New("order id must be set")
+	ErrEmptyLimit      = errors.New("empty price or quantity")
+	ErrMinStrategyType = errors.New("minimal strategy type can't be lower than 1000000")
+	ErrEmptyMarket     = errors.New("quantity or quote quantity expected")
+	ErrNilUnmarshal    = errors.New("UnmarshalJSON on nil pointer")
+	ErrInvalidJSON     = errors.New("invalid json")
 )
 
 type APIError struct {

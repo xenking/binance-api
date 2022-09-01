@@ -70,6 +70,8 @@ const (
 	OrderRespTypeFull   = "FULL"
 )
 
+const MinStrategyType = 1000000
+
 type OrderReq struct {
 	Symbol           string        `url:"symbol"`
 	Side             OrderSide     `url:"side"`
@@ -79,7 +81,10 @@ type OrderReq struct {
 	QuoteQuantity    string        `url:"quoteOrderQty,omitempty"`
 	Price            string        `url:"price,omitempty"`
 	NewClientOrderID string        `url:"newClientOrderId,omitempty"`
+	StrategyID       int           `url:"strategyId,omitempty"`
+	StrategyType     int           `url:"strategyType,omitempty"` // Should be more than 1000000
 	StopPrice        string        `url:"stopPrice,omitempty"`
+	TrailingDelta    int64         `url:"trailingDelta,omitempty"` // Used with STOP_LOSS, STOP_LOSS_LIMIT, TAKE_PROFIT, and TAKE_PROFIT_LIMIT orders.
 	IcebergQty       string        `url:"icebergQty,omitempty"`
 	OrderRespType    OrderRespType `url:"newOrderRespType,omitempty"`
 }
@@ -106,6 +111,8 @@ type OrderRespResult struct {
 	TimeInForce         string      `json:"timeInForce"`
 	Type                OrderType   `json:"type"`
 	Side                OrderSide   `json:"side"`
+	StrategyID          int         `json:"strategyId,omitempty"`
+	StrategyType        int         `json:"strategyType,omitempty"`
 }
 
 type OrderRespFull struct {
@@ -122,6 +129,8 @@ type OrderRespFull struct {
 	TimeInForce         string              `json:"timeInForce"`
 	Type                OrderType           `json:"type"`
 	Side                OrderSide           `json:"side"`
+	StrategyID          int                 `json:"strategyId,omitempty"`
+	StrategyType        int                 `json:"strategyType,omitempty"`
 	Fills               []OrderRespFullFill `json:"fills"`
 }
 
@@ -139,6 +148,7 @@ type ServerTime struct {
 type KlineInterval string
 
 const (
+	KlineInterval1sec   KlineInterval = "1s"
 	KlineInterval1min   KlineInterval = "1m"
 	KlineInterval3min   KlineInterval = "3m"
 	KlineInterval5min   KlineInterval = "5m"
@@ -422,6 +432,8 @@ type QueryOrder struct {
 	Time                uint64      `json:"time"`
 	UpdateTime          uint64      `json:"updateTime"`
 	OrigQuoteOrderQty   string      `json:"origQuoteOrderQty"`
+	StrategyID          int         `json:"strategyId,omitempty"`
+	StrategyType        int         `json:"strategyType,omitempty"`
 }
 
 // Remark: Either OrderID or OrigOrderID must be set
@@ -446,6 +458,39 @@ type CancelOrder struct {
 	TimeInForce         TimeInForce `json:"timeInForce"`
 	Type                OrderType   `json:"type"`
 	Side                OrderSide   `json:"side"`
+	StrategyID          int         `json:"strategyId,omitempty"`
+	StrategyType        int         `json:"strategyType,omitempty"`
+}
+
+type CancelReplaceResult string
+
+const (
+	CancelReplaceResultSuccess      CancelReplaceResult = "SUCCESS"
+	CancelReplaceResultFailure      CancelReplaceResult = "FAILURE"
+	CancelReplaceResultNotAttempted CancelReplaceResult = "NOT_ATTEMPTED"
+)
+
+type CancelReplaceMode string
+
+const (
+	CancelReplaceModeStopOnFailure CancelReplaceMode = "STOP_ON_FAILURE"
+	CancelReplaceModeAllowFailure  CancelReplaceMode = "ALLOW_FAILURE"
+)
+
+// Note: Either CancelOrderID or CancelOrigClientOrderID must be set
+type CancelReplaceOrderReq struct {
+	OrderReq
+	CancelReplaceMode       CancelReplaceMode `url:"cancelReplaceMode"`
+	CancelOrderID           uint64            `url:"cancelOrderId,omitempty"`
+	CancelOrigClientOrderID string            `url:"cancelOrigClientOrderId,omitempty"`
+	CancelNewClientOrderID  string            `url:"cancelNewClientOrderId,omitempty"`
+}
+
+type CancelReplaceOrder struct {
+	CancelResponse   CancelOrder         `json:"cancelResponse"`
+	NewOrderResponse *OrderRespFull      `json:"newOrderResponse,omitempty"`
+	CancelStatus     CancelReplaceResult `json:"cancelResult"`
+	NewOrderResult   CancelReplaceResult `json:"newOrderResult"`
 }
 
 type OpenOrdersReq struct {
@@ -480,8 +525,13 @@ type Balance struct {
 type AccountType string
 
 const (
-	AccountTypeSpot   AccountType = "SPOT"
-	AccountTypeMargin AccountType = "MARGIN"
+	AccountTypeSpot      AccountType = "SPOT"
+	AccountTypeMargin    AccountType = "MARGIN"
+	AccountTypeLeveraged AccountType = "LEVERAGED"
+	AccountTypeGRP2      AccountType = "TRD_GRP_002"
+	AccountTypeGRP3      AccountType = "TRD_GRP_003"
+	AccountTypeGRP4      AccountType = "TRD_GRP_004"
+	AccountTypeGRP5      AccountType = "TRD_GRP_005"
 )
 
 type AccountInfo struct {
@@ -625,8 +675,10 @@ type SymbolInfo struct {
 	IcebergAllowed             bool               `json:"icebergAllowed"`
 	OCOAllowed                 bool               `json:"ocoAllowed"`
 	QuoteOrderQtyMarketAllowed bool               `json:"quoteOrderQtyMarketAllowed"`
+	AllowTrailingStop          bool               `json:"allowTrailingStop"`
 	IsSpotTradingAllowed       bool               `json:"isSpotTradingAllowed"`
 	IsMarginTradingAllowed     bool               `json:"isMarginTradingAllowed"`
+	CancelReplaceAllowed       bool               `json:"cancelReplaceAllowed"`
 	Filters                    []SymbolInfoFilter `json:"filters"`
 	Permissions                []AccountType      `json:"permissions"`
 }
@@ -677,10 +729,17 @@ type SymbolInfoFilter struct {
 	StepSize string `json:"stepSize"`
 
 	// MIN_NOTIONAL parameter
-	MinNotional string `json:"minNotional"`
+	MinNotional   string `json:"minNotional"`
+	ApplyToMarket bool   `json:"applyToMarket"`
 
 	// ICEBERG_PARTS parameter
 	IcebergLimit int `json:"limit"`
+
+	// TRAILING_DELTA parameter
+	MinTrailingAboveDelta int `json:"minTrailingAboveDelta"`
+	MaxTrailingAboveDelta int `json:"maxTrailingAboveDelta"`
+	MinTrailingBelowDelta int `json:"minTrailingBelowDelta"`
+	MaxTrailingBelowDelta int `json:"maxTrailingBelowDelta"`
 
 	// MAX_NUM_ORDERS parameter
 	MaxNumOrders int `json:"maxNumOrders"`
