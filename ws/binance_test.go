@@ -318,15 +318,15 @@ type mockedClient struct {
 	Response func(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error)
 }
 
-func (m *mockedClient) UsedWeight() map[string]int {
+func (m *mockedClient) UsedWeight() map[string]int64 {
 	panic("not used")
 }
 
-func (m *mockedClient) OrderCount() map[string]int {
+func (m *mockedClient) OrderCount() map[string]int64 {
 	panic("not used")
 }
 
-func (m *mockedClient) RetryAfter() int {
+func (m *mockedClient) RetryAfter() int64 {
 	panic("not used")
 }
 
