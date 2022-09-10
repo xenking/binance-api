@@ -1,8 +1,6 @@
 package ws
 
 import (
-	"bytes"
-
 	"github.com/go-faster/errors"
 
 	"github.com/xenking/binance-api"
@@ -12,19 +10,22 @@ import (
 type UpdateType string
 
 const (
-	// UpdateTypeUnknown default for unknown type
-	UpdateTypeUnknown     UpdateType = "unknown"
 	UpdateTypeDepth       UpdateType = "depthUpdate"
 	UpdateTypeIndivTicker UpdateType = "24hrTicker"
 	UpdateTypeKline       UpdateType = "kline"
 	UpdateTypeAggTrades   UpdateType = "aggTrade"
 	UpdateTypeTrades      UpdateType = "trade"
+)
 
-	UpdateTypeOutboundAccountInfo     UpdateType = "outboundAccountInfo"
-	UpdateTypeOutboundAccountPosition UpdateType = "outboundAccountPosition"
-	UpdateTypeOrderReport             UpdateType = "executionReport"
-	UpdateTypeBalanceUpdate           UpdateType = "balanceUpdate"
-	UpdateTypeOCOReport               UpdateType = "listStatus"
+type AccountUpdateEventType string
+
+const (
+	// AccountUpdateEventTypeUnknown default for unknown type
+	AccountUpdateEventTypeUnknown                 AccountUpdateEventType = "unknown"
+	AccountUpdateEventTypeOutboundAccountPosition AccountUpdateEventType = "outboundAccountPosition"
+	AccountUpdateEventTypeOrderReport             AccountUpdateEventType = "executionReport"
+	AccountUpdateEventTypeBalanceUpdate           AccountUpdateEventType = "balanceUpdate"
+	AccountUpdateEventTypeOCOReport               AccountUpdateEventType = "listStatus"
 )
 
 // FrequencyType is a interval for Depth update
@@ -164,111 +165,124 @@ type AggTradeUpdate struct {
 	Maker                 bool       `json:"m"` // Maker indicates whether buyer is a maker
 }
 
-// ErrIncorrectEventType represents error when event type can't before determined
-var ErrIncorrectEventType = errors.New("cant unmarshal event type")
-
-// EventTypeUpdate represents only incoming event type
-type EventTypeUpdate struct {
+// TradeUpdate represents the incoming messages for trades websocket updates
+type TradeUpdate struct {
 	EventType UpdateType `json:"e"` // EventType represents the update type
+	Symbol    string     `json:"s"` // Symbol represents the symbol related to the update
+	Price     string     `json:"p"` // Price is the trade price
+	Quantity  string     `json:"q"` // Quantity is the trade quantity
+	Time      uint64     `json:"E"` // Time represents the event time
+	TradeTime uint64     `json:"T"` // Time is the trade time
+	TradeID   uint64     `json:"t"` // TradeID is the aggregated trade ID
+	BuyerID   int        `json:"b"` // BuyerID is the buyer trade ID
+	SellerID  int        `json:"a"` // SellerID is the seller trade ID
+	Maker     bool       `json:"m"` // Maker indicates whether buyer is a maker
+}
+
+// ErrIncorrectAccountEventType represents error when event type can't before determined
+var ErrIncorrectAccountEventType = errors.New("incorrect account event type")
+
+// UpdateEventType represents only incoming event type
+type UpdateEventType struct {
+	EventType AccountUpdateEventType `json:"e"` // EventType represents the update type
 }
 
 // UnmarshalJSON need to getting partial json data
-func (e *EventTypeUpdate) UnmarshalJSON(buf []byte) error {
-	start := bytes.IndexByte(buf, ':')
-	end := bytes.IndexByte(buf, ',')
-	if end < start+2 || end-start < 3 {
-		e.EventType = UpdateTypeUnknown
-
-		return ErrIncorrectEventType
+func (e *UpdateEventType) UnmarshalJSON(b []byte) error {
+	// {"e":"outboundAccountPosition","E":1499405658658
+	// {"e":"executionReport","E":1499405658658
+	// {"e":"balanceUpdate","E":1499405658658
+	// {"e":"listStatus","E":1499405658658
+	switch {
+	case b[16] == '"':
+		e.EventType = AccountUpdateEventTypeOCOReport
+	case b[19] == '"':
+		e.EventType = AccountUpdateEventTypeBalanceUpdate
+	case b[21] == '"':
+		e.EventType = AccountUpdateEventTypeOrderReport
+	case b[29] == '"':
+		e.EventType = AccountUpdateEventTypeOutboundAccountPosition
+	default:
+		return ErrIncorrectAccountEventType
 	}
-	e.EventType = UpdateType(b2s(buf[start+2 : end-1]))
 
 	return nil
 }
 
-// TradeUpdate represents the incoming messages for trades websocket updates
-type TradeUpdate struct {
-	EventType UpdateType `json:"e"` // EventType represents the update type
-	Time      uint64     `json:"E"` // Time represents the event time
-	Symbol    string     `json:"s"` // Symbol represents the symbol related to the update
-	TradeID   uint64     `json:"t"` // TradeID is the aggregated trade ID
-	Price     string     `json:"p"` // Price is the trade price
-	Quantity  string     `json:"q"` // Quantity is the trade quantity
-	BuyerID   int        `json:"b"` // BuyerID is the buyer trade ID
-	SellerID  int        `json:"a"` // SellerID is the seller trade ID
-	TradeTime uint64     `json:"T"` // Time is the trade time
-	Maker     bool       `json:"m"` // Maker indicates whether buyer is a maker
+// AccountUpdateEvent represents the incoming messages for account websocket updates
+type AccountUpdateEvent struct {
+	EventType  AccountUpdateEventType `json:"e"` // EventType represents the update type
+	Balances   []AccountBalance       `json:"B"` // Balances represents the account balances
+	Time       uint64                 `json:"E"` // Time represents the event time
+	LastUpdate uint64                 `json:"u"` // LastUpdate represents last account update
 }
 
-// AccountInfoUpdate represents the incoming messages for account info websocket updates
-type AccountInfoUpdate struct {
-	EventType        UpdateType `json:"e"` // EventType represents the update type
-	Time             uint64     `json:"E"` // Time represents the event time
-	MakerCommission  int        `json:"m"` // MakerCommission is the maker commission for the account
-	TakerCommission  int        `json:"t"` // TakerCommission is the taker commission for the account
-	BuyerCommission  int        `json:"b"` // BuyerCommission is the buyer commission for the account
-	SellerCommission int        `json:"s"` // SellerCommission is the seller commission for the account
-	CanTrade         bool       `json:"T"`
-	CanWithdraw      bool       `json:"W"`
-	CanDeposit       bool       `json:"D"`
-	Balances         []*struct {
-		Asset  string `json:"a"`
-		Free   string `json:"f"`
-		Locked string `json:"l"`
-	} `json:"B"`
+type AccountBalance struct {
+	Asset  string `json:"a"`
+	Free   string `json:"f"`
+	Locked string `json:"l"`
 }
 
-// AccountUpdate represents the incoming messages for account websocket updates
-type AccountUpdate struct {
-	EventType  UpdateType `json:"e"` // EventType represents the update type
-	Time       uint64     `json:"E"` // Time represents the event time
-	LastUpdate uint64     `json:"u"` // LastUpdate represents last account update
-
-	Balances []*struct {
-		Asset  string `json:"a"`
-		Free   string `json:"f"`
-		Locked string `json:"l"`
-	} `json:"B"`
+// BalanceUpdateEvent represents the incoming message for account balances websocket updates
+type BalanceUpdateEvent struct {
+	EventType    AccountUpdateEventType `json:"e"` // EventType represents the update type
+	Asset        string                 `json:"a"` // Asset
+	BalanceDelta string                 `json:"d"` // Balance Delta
+	Time         uint64                 `json:"E"` // Time represents the event time
+	ClearTime    uint64                 `json:"T"` // Clear Time
 }
 
-// BalanceUpdate represents the incoming message for account balances websocket updates
-type BalanceUpdate struct {
-	EventType    UpdateType `json:"e"` // EventType represents the update type
-	Time         uint64     `json:"E"` // Time represents the event time
-	Asset        string     `json:"a"` // Asset
-	BalanceDelta string     `json:"d"` // Balance Delta
-	ClearTime    uint64     `json:"T"` // Clear Time
+// OrderUpdateEvent represents the incoming messages for account orders websocket updates
+type OrderUpdateEvent struct {
+	EventType           AccountUpdateEventType `json:"e"` // EventType represents the update type
+	Symbol              string                 `json:"s"` // Symbol represents the symbol related to the update
+	NewClientOrderID    string                 `json:"c"` // NewClientOrderID is the new client order ID
+	Side                binance.OrderSide      `json:"S"` // Side is the order side
+	OrderType           binance.OrderType      `json:"o"` // OrderType represents the order type
+	TimeInForce         binance.TimeInForce    `json:"f"` // TimeInForce represents the order TIF type
+	OrigQty             string                 `json:"q"` // OrigQty represents the order original quantity
+	Price               string                 `json:"p"` // Price is the order price
+	StopPrice           string                 `json:"P"`
+	IcebergQty          string                 `json:"F"`
+	OrigClientOrderID   string                 `json:"C"`
+	ExecutionType       binance.OrderStatus    `json:"x"` // ExecutionType represents the execution type for the order
+	Status              binance.OrderStatus    `json:"X"` // Status represents the order status for the order
+	Error               binance.OrderFailure   `json:"r"` // Error represents an order rejection reason
+	FilledQty           string                 `json:"l"` // FilledQty represents the quantity of the last filled trade
+	TotalFilledQty      string                 `json:"z"` // TotalFilledQty is the accumulated quantity of filled trades on this order
+	FilledPrice         string                 `json:"L"` // FilledPrice is the price of last filled trade
+	Commission          string                 `json:"n"` // Commission is the commission for the trade
+	CommissionAsset     string                 `json:"N"` // CommissionAsset is the asset on which commission is taken
+	QuoteTotalFilledQty string                 `json:"Z"` // Cumulative quote asset transacted quantity
+	QuoteFilledQty      string                 `json:"Y"` // Last quote asset transacted quantity (i.e. lastPrice * lastQty)
+	QuoteQty            string                 `json:"Q"` // Quote Order Qty
+	Time                uint64                 `json:"E"` // Time represents the event time
+	TradeTime           uint64                 `json:"T"` // TradeTime is the trade time
+	OrderCreatedTime    uint64                 `json:"O"` // OrderTime represents the order time
+	TradeID             uint64                 `json:"t"` // TradeID represents the trade ID
+	OrderID             uint64                 `json:"i"` // OrderID represents the order ID
+	OrderListID         int64                  `json:"g"`
+	StrategyID          int                    `json:"j"` // Strategy ID; This is only visible if the strategyId parameter was provided upon order placement
+	StrategyType        int                    `json:"J"` // Strategy Type; This is only visible if the strategyType parameter was provided upon order placement
+	Maker               bool                   `json:"m"` // Maker represents whether buyer is maker or not
 }
 
-// OrderUpdate represents the incoming messages for account orders websocket updates
-type OrderUpdate struct {
-	EventType           UpdateType           `json:"e"` // EventType represents the update type
-	Time                uint64               `json:"E"` // Time represents the event time
-	Symbol              string               `json:"s"` // Symbol represents the symbol related to the update
-	NewClientOrderID    string               `json:"c"` // NewClientOrderID is the new client order ID
-	Side                binance.OrderSide    `json:"S"` // Side is the order side
-	OrderType           binance.OrderType    `json:"o"` // OrderType represents the order type
-	TimeInForce         binance.TimeInForce  `json:"f"` // TimeInForce represents the order TIF type
-	OrigQty             string               `json:"q"` // OrigQty represents the order original quantity
-	Price               string               `json:"p"` // Price is the order price
-	StopPrice           string               `json:"P"`
-	IcebergQty          string               `json:"F"`
-	OrderListID         int64                `json:"g"`
-	OrigClientOrderID   string               `json:"C"`
-	ExecutionType       binance.OrderStatus  `json:"x"` // ExecutionType represents the execution type for the order
-	Status              binance.OrderStatus  `json:"X"` // Status represents the order status for the order
-	Error               binance.OrderFailure `json:"r"` // Error represents an order rejection reason
-	OrderID             uint64               `json:"i"` // OrderID represents the order ID
-	FilledQty           string               `json:"l"` // FilledQty represents the quantity of the last filled trade
-	TotalFilledQty      string               `json:"z"` // TotalFilledQty is the accumulated quantity of filled trades on this order
-	FilledPrice         string               `json:"L"` // FilledPrice is the price of last filled trade
-	Commission          string               `json:"n"` // Commission is the commission for the trade
-	CommissionAsset     string               `json:"N"` // CommissionAsset is the asset on which commission is taken
-	TradeTime           uint64               `json:"T"` // TradeTime is the trade time
-	TradeID             uint64               `json:"t"` // TradeID represents the trade ID
-	Maker               bool                 `json:"m"` // Maker represents whether buyer is maker or not
-	OrderCreatedTime    uint64               `json:"O"` // OrderTime represents the order time
-	QuoteTotalFilledQty string               `json:"Z"`
-	QuoteFilledQty      string               `json:"Y"`
-	QuoteQty            string               `json:"Q"`
+type OCOOrderUpdateEvent struct {
+	EventType         AccountUpdateEventType     `json:"e"`
+	Orders            []OCOOrderUpdateEventOrder `json:"O"`
+	Symbol            string                     `json:"s"`
+	ContingencyType   string                     `json:"c"`
+	ListStatusType    string                     `json:"l"`
+	ListOrderStatus   string                     `json:"L"`
+	ListRejectReason  binance.OrderFailure       `json:"r"`
+	ListClientOrderID string                     `json:"C"`
+	TransactTime      uint64                     `json:"T"`
+	OrderListID       int64                      `json:"g"`
+	Time              uint64                     `json:"E"`
+}
+
+type OCOOrderUpdateEventOrder struct {
+	Symbol        string `json:"s"`
+	ClientOrderID string `json:"c"`
+	OrderID       uint64 `json:"i"`
 }

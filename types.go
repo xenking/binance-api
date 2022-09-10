@@ -92,7 +92,7 @@ type OrderReq struct {
 type OrderRespAck struct {
 	Symbol        string `json:"symbol"`
 	OrderID       uint64 `json:"orderId"`
-	OrderListID   int    `json:"orderListId"`
+	OrderListID   int64  `json:"orderListId"`
 	ClientOrderID string `json:"clientOrderId"`
 	TransactTime  uint64 `json:"transactTime"`
 }
@@ -377,6 +377,7 @@ type TickerReq struct {
 
 // TickerStats is the stats for a specific symbol
 type TickerStats struct {
+	Symbol             string `json:"symbol"`
 	PriceChange        string `json:"priceChange"`
 	PriceChangePercent string `json:"priceChangePercent"`
 	WeightedAvgPrice   string `json:"weightedAvgPrice"`
@@ -417,7 +418,7 @@ type QueryOrderReq struct {
 type QueryOrder struct {
 	Symbol              string      `json:"symbol"`
 	OrderID             uint64      `json:"orderId"`
-	OrderListID         int         `json:"orderListId"`
+	OrderListID         int64       `json:"orderListId"`
 	ClientOrderID       string      `json:"clientOrderId"`
 	Price               string      `json:"price"`
 	OrigQty             string      `json:"origQty"`
@@ -448,7 +449,7 @@ type CancelOrder struct {
 	Symbol              string      `json:"symbol"`
 	OrigClientOrderID   string      `json:"origClientOrderId"`
 	OrderID             uint64      `json:"orderId"`
-	OrderListID         int         `json:"orderListId"`
+	OrderListID         int64       `json:"orderListId"`
 	ClientOrderID       string      `json:"clientOrderId"`
 	Price               string      `json:"price"`
 	OrigQty             string      `json:"origQty"`
@@ -561,7 +562,7 @@ type AccountTradesReq struct {
 type AccountTrades struct {
 	ID              int64  `json:"id"`
 	OrderID         uint64 `json:"orderId"`
-	OrderListID     int    `json:"orderListId"`
+	OrderListID     int64  `json:"orderListId"`
 	Symbol          string `json:"symbol"`
 	QuoteQty        string `json:"quoteQty"`
 	Price           string `json:"price"`

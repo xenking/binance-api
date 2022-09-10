@@ -420,37 +420,39 @@ type AccountInfo struct {
 // Read reads a account info update message from account info websocket
 // Remark: The websocket is used to update two different structs, which both are flat, hence every call to this function
 // will return either one of the types initialized and the other one will be set to nil
-func (i *AccountInfo) Read() (UpdateType, interface{}, error) {
+func (i *AccountInfo) Read() (AccountUpdateEventType, interface{}, error) {
 	fr := websocket.AcquireFrame()
 	defer websocket.ReleaseFrame(fr)
-	fr.Reset()
+
 	_, err := i.ReadFrame(fr)
 	if err != nil {
-		return UpdateTypeUnknown, nil, err
+		return AccountUpdateEventTypeUnknown, nil, err
 	}
-	et := EventTypeUpdate{}
-	err = json.Unmarshal(fr.Payload(), &et)
+
+	payload := fr.Payload()
+	et := UpdateEventType{}
+	err = json.Unmarshal(payload, &et)
 	if err != nil {
-		return UpdateTypeUnknown, nil, err
+		return AccountUpdateEventTypeUnknown, nil, err
 	}
 
 	var resp interface{}
 	//nolint:exhaustive
 	switch et.EventType {
-	case UpdateTypeOutboundAccountInfo:
-		resp = &AccountInfoUpdate{}
-	case UpdateTypeOutboundAccountPosition:
-		resp = &AccountUpdate{}
-	case UpdateTypeBalanceUpdate:
-		resp = &BalanceUpdate{}
-	case UpdateTypeOrderReport:
-		resp = &OrderUpdate{}
-	case UpdateTypeOCOReport:
-		return et.EventType, nil, nil
+	case AccountUpdateEventTypeOutboundAccountPosition:
+		resp = &AccountUpdateEvent{}
+	case AccountUpdateEventTypeBalanceUpdate:
+		resp = &BalanceUpdateEvent{}
+	case AccountUpdateEventTypeOrderReport:
+		resp = &OrderUpdateEvent{}
+	case AccountUpdateEventTypeOCOReport:
+		resp = &OCOOrderUpdateEvent{}
 	default:
-		return et.EventType, fr.Payload(), nil
+		buf := make([]byte, len(payload))
+		copy(buf, payload)
+		return et.EventType, buf, nil
 	}
-	err = json.Unmarshal(fr.Payload(), resp)
+	err = json.Unmarshal(payload, resp)
 
 	return et.EventType, resp, err
 }

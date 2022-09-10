@@ -44,7 +44,7 @@ func (s *clientTestSuite) TestTime() {
 }
 
 func (s *clientTestSuite) TestTicker() {
-	_, e := s.api.Ticker(&binance.TickerReq{"LTCBTC"})
+	_, e := s.api.Ticker(&binance.TickerReq{Symbol: "LTCBTC"})
 	s.Require().NoError(e)
 }
 
