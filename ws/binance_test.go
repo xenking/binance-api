@@ -340,23 +340,54 @@ func (m *mockedClient) Do(method, endpoint string, data interface{}, sign bool, 
 
 type mockedTestSuite struct {
 	baseTestSuite
-	api  *binance.Client
-	mock *mockedClient
+	api         *binance.Client
+	mock        *mockedClient
+	listener    net.Listener
+	wss         *websocket.Server
+	listnerDone chan struct{}
 }
 
 func (s *mockedTestSuite) SetupSuite() {
 	s.mock = &mockedClient{}
 	s.api = binance.NewCustomClient(s.mock)
+	s.wss = &websocket.Server{}
+
+	http.HandleFunc("/stream-key", s.wss.NetUpgrade)
 }
 
 func (s *mockedTestSuite) SetupTest() {
+	s.ws = NewCustomClient("ws://localhost:9844/", nil)
+	var err error
+	s.listener, err = net.Listen("tcp", ":9844")
+	s.Require().NoError(err)
+
+	s.listnerDone = make(chan struct{}, 1)
+	go func() {
+		http.Serve(s.listener, nil)
+		s.listnerDone <- struct{}{}
+	}()
+
+	s.mock.Response = func(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error) {
+		s.Require().Nil(data)
+		return json.Marshal(&binance.DatastreamReq{
+			ListenKey: "stream-key",
+		})
+	}
+
+}
+
+func (s *mockedTestSuite) TearDownTest() {
+	err := s.listener.Close()
+	s.Require().NoError(err)
+
+	select {
+	case <-s.listnerDone:
+	case <-time.After(time.Second * 5):
+		s.Fail("timeout")
+	}
 }
 
 func (s *mockedTestSuite) TestAccountInfo_Read() {
-	s.ws = NewCustomClient("ws://localhost:9844/", nil)
-	ln, err := net.Listen("tcp", ":9844")
-	s.Require().NoError(err)
-
 	expected := []interface{}{
 		&BalanceUpdateEvent{
 			EventType:    AccountUpdateEventTypeBalanceUpdate,
@@ -419,8 +450,7 @@ func (s *mockedTestSuite) TestAccountInfo_Read() {
 		},
 	}
 
-	wss := websocket.Server{}
-	wss.HandleOpen(func(conn *websocket.Conn) {
+	s.wss.HandleOpen(func(conn *websocket.Conn) {
 		for _, ex := range expected {
 			b, err := json.Marshal(ex)
 			s.Require().NoError(err)
@@ -430,28 +460,9 @@ func (s *mockedTestSuite) TestAccountInfo_Read() {
 			s.Require().NotZero(written)
 		}
 	})
-	http.HandleFunc("/stream-key", wss.NetUpgrade)
-
-	ch := make(chan struct{}, 1)
-	go func() {
-		http.Serve(ln, nil)
-		ch <- struct{}{}
-	}()
-
-	s.mock.Response = func(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error) {
-		s.Require().Nil(data)
-		return json.Marshal(&binance.DatastreamReq{
-			ListenKey: "stream-key",
-		})
-	}
 
 	key, err := s.api.DataStream()
 	s.Require().NoError(err)
-
-	s.mock.Response = func(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error) {
-		s.Require().IsType(binance.DatastreamReq{}, data)
-		return nil, nil
-	}
 
 	ws, err := s.ws.AccountInfo(key)
 	s.Require().NoError(err)
@@ -461,16 +472,314 @@ func (s *mockedTestSuite) TestAccountInfo_Read() {
 		s.Require().NoError(err)
 		s.Require().EqualValues(ex, actual)
 	}
+
+	s.mock.Response = func(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error) {
+		s.Require().IsType(binance.DatastreamReq{}, data)
+		return nil, nil
+	}
+
 	err = s.api.DataStreamClose(key)
 	s.Require().NoError(err)
 	err = ws.Close()
 	s.Require().NoError(err)
-	err = ln.Close()
+}
+
+func (s *mockedTestSuite) TestAccountInfo_BalancesStream() {
+	expected := []interface{}{
+		&BalanceUpdateEvent{
+			EventType:    AccountUpdateEventTypeBalanceUpdate,
+			Time:         rand.Uint64(),
+			Asset:        "BTC",
+			BalanceDelta: "1",
+		},
+		&BalanceUpdateEvent{
+			EventType:    AccountUpdateEventTypeBalanceUpdate,
+			Time:         rand.Uint64(),
+			Asset:        "ETH",
+			BalanceDelta: "1",
+		},
+		&BalanceUpdateEvent{
+			EventType:    AccountUpdateEventTypeBalanceUpdate,
+			Time:         rand.Uint64(),
+			Asset:        "BTC",
+			BalanceDelta: "2",
+		},
+	}
+
+	s.wss.HandleOpen(func(conn *websocket.Conn) {
+		for _, ex := range expected {
+			b, err := json.Marshal(ex)
+			s.Require().NoError(err)
+
+			written, err := conn.Write(b)
+			s.Require().NoError(err)
+			s.Require().NotZero(written)
+		}
+	})
+
+	key, err := s.api.DataStream()
 	s.Require().NoError(err)
 
-	select {
-	case <-ch:
-	case <-time.After(time.Second * 5):
-		s.Fail("timeout")
+	ws, err := s.ws.AccountInfo(key)
+	s.Require().NoError(err)
+
+	stream := ws.BalancesStream()
+	for _, ex := range expected {
+		actual := <-stream
+		s.Require().NoError(err)
+		s.Require().EqualValues(ex, actual)
 	}
+
+	s.mock.Response = func(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error) {
+		s.Require().IsType(binance.DatastreamReq{}, data)
+		return nil, nil
+	}
+
+	err = s.api.DataStreamClose(key)
+	s.Require().NoError(err)
+	err = ws.Close()
+	s.Require().NoError(err)
+}
+
+func (s *mockedTestSuite) TestAccountInfo_AccountStream() {
+	expected := []interface{}{
+		&AccountUpdateEvent{
+			Balances: []AccountBalance{
+				{
+					Asset:  "ETH",
+					Free:   "1",
+					Locked: "0.5",
+				},
+			},
+			EventType:  AccountUpdateEventTypeOutboundAccountPosition,
+			Time:       rand.Uint64(),
+			LastUpdate: rand.Uint64(),
+		},
+		&AccountUpdateEvent{
+			Balances: []AccountBalance{
+				{
+					Asset:  "BTC",
+					Free:   "1",
+					Locked: "0.5",
+				},
+			},
+			EventType:  AccountUpdateEventTypeOutboundAccountPosition,
+			Time:       rand.Uint64(),
+			LastUpdate: rand.Uint64(),
+		},
+	}
+
+	s.wss.HandleOpen(func(conn *websocket.Conn) {
+		for _, ex := range expected {
+			b, err := json.Marshal(ex)
+			s.Require().NoError(err)
+
+			written, err := conn.Write(b)
+			s.Require().NoError(err)
+			s.Require().NotZero(written)
+		}
+	})
+
+	key, err := s.api.DataStream()
+	s.Require().NoError(err)
+
+	ws, err := s.ws.AccountInfo(key)
+	s.Require().NoError(err)
+
+	stream := ws.AccountStream()
+	for _, ex := range expected {
+		actual := <-stream
+		s.Require().NoError(err)
+		s.Require().EqualValues(ex, actual)
+	}
+
+	s.mock.Response = func(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error) {
+		s.Require().IsType(binance.DatastreamReq{}, data)
+		return nil, nil
+	}
+
+	err = s.api.DataStreamClose(key)
+	s.Require().NoError(err)
+	err = ws.Close()
+	s.Require().NoError(err)
+}
+
+func (s *mockedTestSuite) TestAccountInfo_OrdersStream() {
+	expected := []interface{}{
+		&OrderUpdateEvent{
+			EventType:        AccountUpdateEventTypeOrderReport,
+			Symbol:           "ETHBTC",
+			Side:             "BUY",
+			OrderType:        "LIMIT",
+			TimeInForce:      "GTC",
+			OrigQty:          "1",
+			Price:            "3400",
+			Status:           "FILLED",
+			FilledQty:        "1",
+			TotalFilledQty:   "1",
+			FilledPrice:      "3400",
+			Commission:       "0.00001",
+			CommissionAsset:  "BTC",
+			Time:             rand.Uint64(),
+			TradeTime:        rand.Uint64(),
+			OrderCreatedTime: rand.Uint64(),
+			TradeID:          rand.Uint64(),
+			OrderID:          rand.Uint64(),
+		},
+		&OrderUpdateEvent{
+			EventType:        AccountUpdateEventTypeOrderReport,
+			Symbol:           "ETHBTC",
+			Side:             "BUY",
+			OrderType:        "LIMIT",
+			TimeInForce:      "GTC",
+			OrigQty:          "1",
+			Price:            "3500",
+			Status:           "FILLED",
+			FilledQty:        "1",
+			TotalFilledQty:   "1",
+			FilledPrice:      "3500",
+			Commission:       "0.00001",
+			CommissionAsset:  "BTC",
+			Time:             rand.Uint64(),
+			TradeTime:        rand.Uint64(),
+			OrderCreatedTime: rand.Uint64(),
+			TradeID:          rand.Uint64(),
+			OrderID:          rand.Uint64(),
+		},
+		&OrderUpdateEvent{
+			EventType:        AccountUpdateEventTypeOrderReport,
+			Symbol:           "ETHBTC",
+			Side:             "BUY",
+			OrderType:        "LIMIT",
+			TimeInForce:      "GTC",
+			OrigQty:          "1",
+			Price:            "3600",
+			Status:           "FILLED",
+			FilledQty:        "1",
+			TotalFilledQty:   "1",
+			FilledPrice:      "3600",
+			Commission:       "0.00001",
+			CommissionAsset:  "BTC",
+			Time:             rand.Uint64(),
+			TradeTime:        rand.Uint64(),
+			OrderCreatedTime: rand.Uint64(),
+			TradeID:          rand.Uint64(),
+			OrderID:          rand.Uint64(),
+		},
+	}
+
+	s.wss.HandleOpen(func(conn *websocket.Conn) {
+		for _, ex := range expected {
+			b, err := json.Marshal(ex)
+			s.Require().NoError(err)
+
+			written, err := conn.Write(b)
+			s.Require().NoError(err)
+			s.Require().NotZero(written)
+		}
+	})
+
+	key, err := s.api.DataStream()
+	s.Require().NoError(err)
+
+	ws, err := s.ws.AccountInfo(key)
+	s.Require().NoError(err)
+
+	stream := ws.OrdersStream()
+	for _, ex := range expected {
+		actual := <-stream
+		s.Require().NoError(err)
+		s.Require().EqualValues(ex, actual)
+	}
+
+	s.mock.Response = func(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error) {
+		s.Require().IsType(binance.DatastreamReq{}, data)
+		return nil, nil
+	}
+
+	err = s.api.DataStreamClose(key)
+	s.Require().NoError(err)
+	err = ws.Close()
+	s.Require().NoError(err)
+}
+
+func (s *mockedTestSuite) TestAccountInfo_OCOOrdersStream() {
+	expected := []interface{}{
+		&OCOOrderUpdateEvent{
+			EventType: AccountUpdateEventTypeOCOReport,
+			Orders: []OCOOrderUpdateEventOrder{
+				{
+					Symbol:  "ETH",
+					OrderID: rand.Uint64(),
+				},
+				{
+					Symbol:  "BTC",
+					OrderID: rand.Uint64(),
+				},
+			},
+			Symbol:           "ETHBTC",
+			ContingencyType:  "OCO",
+			ListStatusType:   "EXEC_STARTED",
+			ListOrderStatus:  "EXECUTING",
+			ListRejectReason: "NONE",
+			TransactTime:     rand.Uint64(),
+			OrderListID:      rand.Int63(),
+			Time:             rand.Uint64(),
+		},
+		&OCOOrderUpdateEvent{
+			EventType: AccountUpdateEventTypeOCOReport,
+			Orders: []OCOOrderUpdateEventOrder{
+				{
+					Symbol:  "ETH",
+					OrderID: rand.Uint64(),
+				},
+				{
+					Symbol:  "BTC",
+					OrderID: rand.Uint64(),
+				},
+			},
+			Symbol:           "ETHBTC",
+			ContingencyType:  "OCO",
+			ListStatusType:   "EXEC_STARTED",
+			ListOrderStatus:  "EXECUTING",
+			ListRejectReason: "NONE",
+			TransactTime:     rand.Uint64(),
+			OrderListID:      rand.Int63(),
+			Time:             rand.Uint64(),
+		},
+	}
+
+	s.wss.HandleOpen(func(conn *websocket.Conn) {
+		for _, ex := range expected {
+			b, err := json.Marshal(ex)
+			s.Require().NoError(err)
+
+			written, err := conn.Write(b)
+			s.Require().NoError(err)
+			s.Require().NotZero(written)
+		}
+	})
+
+	key, err := s.api.DataStream()
+	s.Require().NoError(err)
+
+	ws, err := s.ws.AccountInfo(key)
+	s.Require().NoError(err)
+
+	stream := ws.OCOOrdersStream()
+	for _, ex := range expected {
+		actual := <-stream
+		s.Require().NoError(err)
+		s.Require().EqualValues(ex, actual)
+	}
+
+	s.mock.Response = func(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error) {
+		s.Require().IsType(binance.DatastreamReq{}, data)
+		return nil, nil
+	}
+
+	err = s.api.DataStreamClose(key)
+	s.Require().NoError(err)
+	err = ws.Close()
+	s.Require().NoError(err)
 }

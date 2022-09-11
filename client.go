@@ -107,15 +107,7 @@ var (
 )
 
 func newHTTP2Client() (*fasthttp.HostClient, error) {
-	hc := &fasthttp.HostClient{
-		NoDefaultUserAgentHeader:      true, // Don't send: User-Agent: fasthttp
-		DisableHeaderNamesNormalizing: false,
-		DisablePathNormalizing:        false,
-		IsTLS:                         true,
-		Name:                          DefaultUserAgent,
-		Addr:                          BaseHostPort,
-		TLSConfig:                     &tls.Config{ServerName: BaseHost},
-	}
+	hc := newHTTPClient()
 
 	if err := http2.ConfigureClient(hc, http2.ClientOpts{}); err != nil {
 		return nil, errors.Wrapf(err, "%s doesn't support http/2", hc.Addr)

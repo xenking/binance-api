@@ -48,13 +48,11 @@ func (c *Conn) stream(deferFunc func(), cb func(data []byte) error) {
 		_, err = c.ReadFrame(fr)
 		if err != nil {
 			c.Error = err
-
 			return
 		}
 		err = cb(fr.Payload())
 		if err != nil {
 			c.Error = err
-
 			return
 		}
 	}
@@ -455,4 +453,118 @@ func (i *AccountInfo) Read() (AccountUpdateEventType, interface{}, error) {
 	err = json.Unmarshal(payload, resp)
 
 	return et.EventType, resp, err
+}
+
+func (i *AccountInfo) OrdersStream() <-chan *OrderUpdateEvent {
+	updates := make(chan *OrderUpdateEvent)
+	cb := func(data []byte) error {
+		u := &OrderUpdateEvent{}
+		if err := json.Unmarshal(data, u); err != nil {
+			return err
+		}
+		updates <- u
+
+		return nil
+	}
+	deferFunc := func() {
+		close(updates)
+	}
+
+	go i.stream(AccountUpdateEventTypeOrderReport, deferFunc, cb)
+
+	return updates
+}
+
+func (i *AccountInfo) OCOOrdersStream() <-chan *OCOOrderUpdateEvent {
+	updates := make(chan *OCOOrderUpdateEvent)
+	cb := func(data []byte) error {
+		u := &OCOOrderUpdateEvent{}
+		if err := json.Unmarshal(data, u); err != nil {
+			return err
+		}
+		updates <- u
+
+		return nil
+	}
+	deferFunc := func() {
+		close(updates)
+	}
+
+	go i.stream(AccountUpdateEventTypeOCOReport, deferFunc, cb)
+
+	return updates
+}
+
+func (i *AccountInfo) BalancesStream() <-chan *BalanceUpdateEvent {
+	updates := make(chan *BalanceUpdateEvent)
+	cb := func(data []byte) error {
+		u := &BalanceUpdateEvent{}
+		if err := json.Unmarshal(data, u); err != nil {
+			return err
+		}
+		updates <- u
+
+		return nil
+	}
+	deferFunc := func() {
+		close(updates)
+	}
+
+	go i.stream(AccountUpdateEventTypeBalanceUpdate, deferFunc, cb)
+
+	return updates
+}
+
+func (i *AccountInfo) AccountStream() <-chan *AccountUpdateEvent {
+	updates := make(chan *AccountUpdateEvent)
+	cb := func(data []byte) error {
+		u := &AccountUpdateEvent{}
+		if err := json.Unmarshal(data, u); err != nil {
+			return err
+		}
+		updates <- u
+
+		return nil
+	}
+	deferFunc := func() {
+		close(updates)
+	}
+
+	go i.stream(AccountUpdateEventTypeOutboundAccountPosition, deferFunc, cb)
+
+	return updates
+}
+
+func (i *AccountInfo) stream(eventType AccountUpdateEventType, deferFunc func(), cb func(data []byte) error) {
+	fr := websocket.AcquireFrame()
+	defer websocket.ReleaseFrame(fr)
+	defer deferFunc()
+
+	var event UpdateEventType
+	var err error
+	for {
+		fr.Reset()
+		_, err = i.ReadFrame(fr)
+		if err != nil {
+			i.Error = err
+			return
+		}
+
+		payload := fr.Payload()
+		err = json.Unmarshal(payload, &event)
+		if err != nil {
+			i.Error = err
+			return
+		}
+
+		if event.EventType != eventType {
+			continue
+		}
+
+		err = cb(payload)
+		if err != nil {
+			i.Error = err
+			return
+		}
+	}
 }
