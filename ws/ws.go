@@ -551,6 +551,10 @@ func (i *AccountInfo) stream(eventType AccountUpdateEventType, deferFunc func(),
 		}
 
 		payload := fr.Payload()
+		if payload[0] != '{' && len(payload) == 13 {
+			// heartbeat
+			continue
+		}
 		err = json.Unmarshal(payload, &event)
 		if err != nil {
 			i.Error = err
