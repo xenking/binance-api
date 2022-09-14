@@ -70,8 +70,8 @@ type IndivTickerUpdate struct {
 	VolumeQuote   string     `json:"q"` // Total traded quote asset volume
 	StatisticOT   uint64     `json:"O"` // Statistics open time
 	StatisticsCT  uint64     `json:"C"` // Statistics close time
-	FirstTradeID  uint64     `json:"F"` // First trade ID
-	LastTradeID   uint64     `json:"L"` // Last trade ID
+	FirstTradeID  int64      `json:"F"` // First trade ID
+	LastTradeID   int64      `json:"L"` // Last trade ID
 	TotalTrades   int        `json:"n"` // Total number of trades
 }
 
@@ -135,8 +135,8 @@ type KlinesUpdate struct {
 		EndTime      uint64                `json:"T"` // EndTime is the end time of this bar
 		Symbol       string                `json:"s"` // Symbol represents the symbol related to this kline
 		Interval     binance.KlineInterval `json:"i"` // Interval is the kline interval
-		FirstTradeID uint64                `json:"f"` // FirstTradeID is the first trade ID
-		LastTradeID  uint64                `json:"L"` // LastTradeID is the first trade ID
+		FirstTradeID int64                 `json:"f"` // FirstTradeID is the first trade ID
+		LastTradeID  int64                 `json:"L"` // LastTradeID is the first trade ID
 
 		OpenPrice            string `json:"o"` // OpenPrice represents the open price for this bar
 		ClosePrice           string `json:"c"` // ClosePrice represents the close price for this bar
@@ -156,11 +156,11 @@ type AggTradeUpdate struct {
 	EventType             UpdateType `json:"e"` // EventType represents the update type
 	Time                  uint64     `json:"E"` // Time represents the event time
 	Symbol                string     `json:"s"` // Symbol represents the symbol related to the update
-	TradeID               uint64     `json:"a"` // TradeID is the aggregated trade ID
+	TradeID               int64      `json:"a"` // TradeID is the aggregated trade ID
 	Price                 string     `json:"p"` // Price is the trade price
 	Quantity              string     `json:"q"` // Quantity is the trade quantity
-	FirstBreakDownTradeID uint64     `json:"f"` // FirstBreakDownTradeID is the first breakdown trade ID
-	LastBreakDownTradeID  uint64     `json:"l"` // LastBreakDownTradeID is the last breakdown trade ID
+	FirstBreakDownTradeID int64      `json:"f"` // FirstBreakDownTradeID is the first breakdown trade ID
+	LastBreakDownTradeID  int64      `json:"l"` // LastBreakDownTradeID is the last breakdown trade ID
 	TradeTime             uint64     `json:"T"` // Time is the trade time
 	Maker                 bool       `json:"m"` // Maker indicates whether buyer is a maker
 }
@@ -173,7 +173,7 @@ type TradeUpdate struct {
 	Quantity  string     `json:"q"` // Quantity is the trade quantity
 	Time      uint64     `json:"E"` // Time represents the event time
 	TradeTime uint64     `json:"T"` // Time is the trade time
-	TradeID   uint64     `json:"t"` // TradeID is the aggregated trade ID
+	TradeID   int64      `json:"t"` // TradeID is the aggregated trade ID
 	BuyerID   int        `json:"b"` // BuyerID is the buyer trade ID
 	SellerID  int        `json:"a"` // SellerID is the seller trade ID
 	Maker     bool       `json:"m"` // Maker indicates whether buyer is a maker
@@ -259,8 +259,8 @@ type OrderUpdateEvent struct {
 	Time                uint64                 `json:"E"` // Time represents the event time
 	TradeTime           uint64                 `json:"T"` // TradeTime is the trade time
 	OrderCreatedTime    uint64                 `json:"O"` // OrderTime represents the order time
-	TradeID             uint64                 `json:"t"` // TradeID represents the trade ID
 	OrderID             uint64                 `json:"i"` // OrderID represents the order ID
+	TradeID             int64                  `json:"t"` // TradeID represents the trade ID
 	OrderListID         int64                  `json:"g"`
 	StrategyID          int                    `json:"j"` // Strategy ID; This is only visible if the strategyId parameter was provided upon order placement
 	StrategyType        int                    `json:"J"` // Strategy Type; This is only visible if the strategyType parameter was provided upon order placement
