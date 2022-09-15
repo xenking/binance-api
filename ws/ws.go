@@ -6,38 +6,50 @@ import (
 )
 
 type Conn struct {
-	*websocket.Client
-	Error error
+	conn *websocket.Client
+	err  error
 }
 
 func NewConn(client *websocket.Client) Conn {
-	return Conn{Client: client}
+	return Conn{
+		conn: client,
+	}
 }
 
 func (c *Conn) Err() error {
-	return c.Error
+	return c.err
 }
 
 func (c *Conn) Close() error {
-	return c.Client.Close()
+	return c.conn.Close()
 }
 
-func (c *Conn) read(value interface{}) error {
+func (c *Conn) Shutdown() error {
+	return c.conn.Shutdown()
+}
+
+func (c *Conn) ReadValue(value interface{}) (err error) {
 	fr := websocket.AcquireFrame()
-	fr.Reset()
-	_, err := c.ReadFrame(fr)
-	if err != nil {
-		websocket.ReleaseFrame(fr)
-
-		return err
+	defer websocket.ReleaseFrame(fr)
+	for {
+		fr.Reset()
+		if _, err = c.conn.ReadFrame(fr); err != nil {
+			return
+		}
+		if !fr.IsPing() {
+			break
+		}
+		fr.Reset()
+		fr.SetPong()
+		if _, err = c.conn.WriteFrame(fr); err != nil {
+			return
+		}
 	}
-	err = json.Unmarshal(fr.Payload(), value)
-	websocket.ReleaseFrame(fr)
 
-	return err
+	return json.Unmarshal(fr.Payload(), value)
 }
 
-func (c *Conn) stream(deferFunc func(), cb func(data []byte) error) {
+func (c *Conn) NewStream(deferFunc func(), cb func(data []byte) error) {
 	fr := websocket.AcquireFrame()
 	defer websocket.ReleaseFrame(fr)
 	defer deferFunc()
@@ -45,14 +57,51 @@ func (c *Conn) stream(deferFunc func(), cb func(data []byte) error) {
 	var err error
 	for {
 		fr.Reset()
-		_, err = c.ReadFrame(fr)
+		_, err = c.conn.ReadFrame(fr)
 		if err != nil {
-			c.Error = err
+			c.err = err
 			return
+		}
+		if fr.IsPing() {
+			fr.Reset()
+			fr.SetPong()
+			if _, err = c.conn.WriteFrame(fr); err != nil {
+				return
+			}
+			continue
 		}
 		err = cb(fr.Payload())
 		if err != nil {
-			c.Error = err
+			c.err = err
+			return
+		}
+	}
+}
+
+func (c *Conn) NewStreamRaw(deferFunc func(), cb func(frame *websocket.Frame) error) {
+	fr := websocket.AcquireFrame()
+	defer websocket.ReleaseFrame(fr)
+	defer deferFunc()
+
+	var err error
+	for {
+		fr.Reset()
+		_, err = c.conn.ReadFrame(fr)
+		if err != nil {
+			c.err = err
+			return
+		}
+		if fr.IsPing() {
+			fr.Reset()
+			fr.SetPong()
+			if _, err = c.conn.WriteFrame(fr); err != nil {
+				return
+			}
+			continue
+		}
+		err = cb(fr)
+		if err != nil {
+			c.err = err
 			return
 		}
 	}
@@ -66,12 +115,12 @@ type Depth struct {
 // Read reads a depth update message from depth websocket
 func (d *Depth) Read() (*DepthUpdate, error) {
 	r := &DepthUpdate{}
-	err := d.read(r)
+	err := d.Conn.ReadValue(r)
 
 	return r, err
 }
 
-// Stream stream a depth update message from depth websocket to channel
+// Stream NewStream a depth update message from depth websocket to channel
 func (d *Depth) Stream() <-chan *DepthUpdate {
 	updates := make(chan *DepthUpdate)
 	cb := func(data []byte) error {
@@ -83,7 +132,7 @@ func (d *Depth) Stream() <-chan *DepthUpdate {
 
 		return nil
 	}
-	go d.stream(func() {
+	go d.NewStream(func() {
 		close(updates)
 	}, cb)
 
@@ -98,12 +147,12 @@ type DepthLevel struct {
 // Read reads a depth update message from depth level websocket
 func (d *DepthLevel) Read() (*DepthLevelUpdate, error) {
 	r := &DepthLevelUpdate{}
-	err := d.read(r)
+	err := d.Conn.ReadValue(r)
 
 	return r, err
 }
 
-// Stream stream a depth update message from depth level websocket to channel
+// Stream NewStream a depth update message from depth level websocket to channel
 func (d *DepthLevel) Stream() <-chan *DepthLevelUpdate {
 	updates := make(chan *DepthLevelUpdate)
 	cb := func(data []byte) error {
@@ -115,7 +164,7 @@ func (d *DepthLevel) Stream() <-chan *DepthLevelUpdate {
 
 		return nil
 	}
-	go d.stream(func() {
+	go d.NewStream(func() {
 		close(updates)
 	}, cb)
 
@@ -130,12 +179,12 @@ type AllMarketTicker struct {
 // Read reads a market update message from all markets ticker websocket
 func (t *AllMarketTicker) Read() (*AllMarketTickerUpdate, error) {
 	r := &AllMarketTickerUpdate{}
-	err := t.read(r)
+	err := t.Conn.ReadValue(r)
 
 	return r, err
 }
 
-// Stream stream a market update message from all markets ticker websocket to channel
+// Stream NewStream a market update message from all markets ticker websocket to channel
 func (t *AllMarketTicker) Stream() <-chan *AllMarketTickerUpdate {
 	updates := make(chan *AllMarketTickerUpdate)
 	cb := func(data []byte) error {
@@ -147,7 +196,7 @@ func (t *AllMarketTicker) Stream() <-chan *AllMarketTickerUpdate {
 
 		return nil
 	}
-	go t.stream(func() {
+	go t.NewStream(func() {
 		close(updates)
 	}, cb)
 
@@ -162,12 +211,12 @@ type IndivTicker struct {
 // Read reads a individual symbol update message from individual ticker websocket
 func (t *IndivTicker) Read() (*IndivTickerUpdate, error) {
 	r := &IndivTickerUpdate{}
-	err := t.read(r)
+	err := t.Conn.ReadValue(r)
 
 	return r, err
 }
 
-// Stream stream a individual update message from individual ticker websocket to channel
+// Stream NewStream a individual update message from individual ticker websocket to channel
 func (t *IndivTicker) Stream() <-chan *IndivTickerUpdate {
 	updates := make(chan *IndivTickerUpdate)
 	cb := func(data []byte) error {
@@ -179,7 +228,7 @@ func (t *IndivTicker) Stream() <-chan *IndivTickerUpdate {
 
 		return nil
 	}
-	go t.stream(func() {
+	go t.NewStream(func() {
 		close(updates)
 	}, cb)
 
@@ -194,12 +243,12 @@ type AllMarketMiniTicker struct {
 // Read reads a market update message from all markets mini-ticker websocket
 func (t *AllMarketMiniTicker) Read() (*AllMarketMiniTickerUpdate, error) {
 	r := &AllMarketMiniTickerUpdate{}
-	err := t.read(r)
+	err := t.Conn.ReadValue(r)
 
 	return r, err
 }
 
-// Stream stream a market update message from all markets mini-ticker websocket to channel
+// Stream NewStream a market update message from all markets mini-ticker websocket to channel
 func (t *AllMarketMiniTicker) Stream() <-chan *AllMarketMiniTickerUpdate {
 	updates := make(chan *AllMarketMiniTickerUpdate)
 	cb := func(data []byte) error {
@@ -211,7 +260,7 @@ func (t *AllMarketMiniTicker) Stream() <-chan *AllMarketMiniTickerUpdate {
 
 		return nil
 	}
-	go t.stream(func() {
+	go t.NewStream(func() {
 		close(updates)
 	}, cb)
 
@@ -226,12 +275,12 @@ type IndivMiniTicker struct {
 // Read reads a individual symbol update message from individual mini-ticker websocket
 func (t *IndivMiniTicker) Read() (*IndivMiniTickerUpdate, error) {
 	r := &IndivMiniTickerUpdate{}
-	err := t.read(r)
+	err := t.Conn.ReadValue(r)
 
 	return r, err
 }
 
-// Stream stream a individual update message from individual mini-ticker websocket to channel
+// Stream NewStream a individual update message from individual mini-ticker websocket to channel
 func (t *IndivMiniTicker) Stream() <-chan *IndivMiniTickerUpdate {
 	updates := make(chan *IndivMiniTickerUpdate)
 	cb := func(data []byte) error {
@@ -243,7 +292,7 @@ func (t *IndivMiniTicker) Stream() <-chan *IndivMiniTickerUpdate {
 
 		return nil
 	}
-	go t.stream(func() {
+	go t.NewStream(func() {
 		close(updates)
 	}, cb)
 
@@ -258,12 +307,12 @@ type AllBookTicker struct {
 // Read reads a book update message from all book tickers websocket
 func (t *AllBookTicker) Read() (*AllBookTickerUpdate, error) {
 	r := &AllBookTickerUpdate{}
-	err := t.read(r)
+	err := t.Conn.ReadValue(r)
 
 	return r, err
 }
 
-// Stream stream a book update message from all book tickers websocket to channel
+// Stream NewStream a book update message from all book tickers websocket to channel
 func (t *AllBookTicker) Stream() <-chan *AllBookTickerUpdate {
 	updates := make(chan *AllBookTickerUpdate)
 	cb := func(data []byte) error {
@@ -275,7 +324,7 @@ func (t *AllBookTicker) Stream() <-chan *AllBookTickerUpdate {
 
 		return nil
 	}
-	go t.stream(func() {
+	go t.NewStream(func() {
 		close(updates)
 	}, cb)
 
@@ -290,12 +339,12 @@ type IndivBookTicker struct {
 // Read reads a individual book symbol update message from individual book ticker websocket
 func (t *IndivBookTicker) Read() (*IndivBookTickerUpdate, error) {
 	r := &IndivBookTickerUpdate{}
-	err := t.read(r)
+	err := t.Conn.ReadValue(r)
 
 	return r, err
 }
 
-// Stream stream a individual book symbol update message from individual book ticker websocket to channel
+// Stream NewStream a individual book symbol update message from individual book ticker websocket to channel
 func (t *IndivBookTicker) Stream() <-chan *IndivBookTickerUpdate {
 	updates := make(chan *IndivBookTickerUpdate)
 	cb := func(data []byte) error {
@@ -307,7 +356,7 @@ func (t *IndivBookTicker) Stream() <-chan *IndivBookTickerUpdate {
 
 		return nil
 	}
-	go t.stream(func() {
+	go t.NewStream(func() {
 		close(updates)
 	}, cb)
 
@@ -322,12 +371,12 @@ type Klines struct {
 // Read reads a klines update message from klines websocket
 func (k *Klines) Read() (*KlinesUpdate, error) {
 	r := &KlinesUpdate{}
-	err := k.read(r)
+	err := k.Conn.ReadValue(r)
 
 	return r, err
 }
 
-// Stream stream a klines update message from klines websocket to channel
+// Stream NewStream a klines update message from klines websocket to channel
 func (k *Klines) Stream() <-chan *KlinesUpdate {
 	updates := make(chan *KlinesUpdate)
 	cb := func(data []byte) error {
@@ -339,7 +388,7 @@ func (k *Klines) Stream() <-chan *KlinesUpdate {
 
 		return nil
 	}
-	go k.stream(func() {
+	go k.NewStream(func() {
 		close(updates)
 	}, cb)
 
@@ -354,12 +403,12 @@ type AggTrades struct {
 // Read reads a trades update message from aggregated trades websocket
 func (t *AggTrades) Read() (*AggTradeUpdate, error) {
 	r := &AggTradeUpdate{}
-	err := t.read(r)
+	err := t.Conn.ReadValue(r)
 
 	return r, err
 }
 
-// Stream stream a trades update message from aggregated trades websocket to channel
+// Stream NewStream a trades update message from aggregated trades websocket to channel
 func (t *AggTrades) Stream() <-chan *AggTradeUpdate {
 	updates := make(chan *AggTradeUpdate)
 	cb := func(data []byte) error {
@@ -371,7 +420,7 @@ func (t *AggTrades) Stream() <-chan *AggTradeUpdate {
 
 		return nil
 	}
-	go t.stream(func() {
+	go t.NewStream(func() {
 		close(updates)
 	}, cb)
 
@@ -386,12 +435,12 @@ type Trades struct {
 // Read reads a trades update message from trades websocket
 func (t *Trades) Read() (*TradeUpdate, error) {
 	r := &TradeUpdate{}
-	err := t.read(r)
+	err := t.Conn.ReadValue(r)
 
 	return r, err
 }
 
-// Stream stream a trades update message from trades websocket to channel
+// Stream NewStream a trades update message from trades websocket to channel
 func (t *Trades) Stream() <-chan *TradeUpdate {
 	updates := make(chan *TradeUpdate)
 	cb := func(data []byte) error {
@@ -403,7 +452,7 @@ func (t *Trades) Stream() <-chan *TradeUpdate {
 
 		return nil
 	}
-	go t.stream(func() {
+	go t.NewStream(func() {
 		close(updates)
 	}, cb)
 
@@ -422,14 +471,25 @@ func (i *AccountInfo) Read() (AccountUpdateEventType, interface{}, error) {
 	fr := websocket.AcquireFrame()
 	defer websocket.ReleaseFrame(fr)
 
-	_, err := i.ReadFrame(fr)
-	if err != nil {
-		return AccountUpdateEventTypeUnknown, nil, err
+	for {
+		_, err := i.conn.ReadFrame(fr)
+		if err != nil {
+			return AccountUpdateEventTypeUnknown, nil, err
+		}
+
+		if !fr.IsPing() {
+			break
+		}
+		fr.Reset()
+		fr.SetPong()
+		if _, err = i.conn.WriteFrame(fr); err != nil {
+			return AccountUpdateEventTypeUnknown, nil, err
+		}
 	}
 
 	payload := fr.Payload()
 	et := UpdateEventType{}
-	err = json.Unmarshal(payload, &et)
+	err := json.Unmarshal(payload, &et)
 	if err != nil {
 		return AccountUpdateEventTypeUnknown, nil, err
 	}
@@ -457,118 +517,124 @@ func (i *AccountInfo) Read() (AccountUpdateEventType, interface{}, error) {
 
 func (i *AccountInfo) OrdersStream() <-chan *OrderUpdateEvent {
 	updates := make(chan *OrderUpdateEvent)
-	cb := func(data []byte) error {
+	deferFunc := func() {
+		close(updates)
+	}
+
+	go i.NewStreamRaw(deferFunc, func(fr *websocket.Frame) error {
+		payload := fr.Payload()
+
+		var event UpdateEventType
+		err := json.Unmarshal(payload, &event)
+		if err != nil {
+			return err
+		}
+
+		if event.EventType != AccountUpdateEventTypeOrderReport {
+			return nil
+		}
+
 		u := &OrderUpdateEvent{}
-		if err := json.Unmarshal(data, u); err != nil {
+		if err = json.Unmarshal(payload, u); err != nil {
 			return err
 		}
 		updates <- u
 
 		return nil
-	}
-	deferFunc := func() {
-		close(updates)
-	}
-
-	go i.stream(AccountUpdateEventTypeOrderReport, deferFunc, cb)
+	})
 
 	return updates
 }
 
 func (i *AccountInfo) OCOOrdersStream() <-chan *OCOOrderUpdateEvent {
 	updates := make(chan *OCOOrderUpdateEvent)
-	cb := func(data []byte) error {
+	deferFunc := func() {
+		close(updates)
+	}
+
+	go i.NewStreamRaw(deferFunc, func(fr *websocket.Frame) error {
+		payload := fr.Payload()
+
+		var event UpdateEventType
+		err := json.Unmarshal(payload, &event)
+		if err != nil {
+			return err
+		}
+
+		if event.EventType != AccountUpdateEventTypeOCOReport {
+			return nil
+		}
+
 		u := &OCOOrderUpdateEvent{}
-		if err := json.Unmarshal(data, u); err != nil {
+		if err = json.Unmarshal(payload, u); err != nil {
 			return err
 		}
 		updates <- u
 
 		return nil
-	}
-	deferFunc := func() {
-		close(updates)
-	}
-
-	go i.stream(AccountUpdateEventTypeOCOReport, deferFunc, cb)
+	})
 
 	return updates
 }
 
 func (i *AccountInfo) BalancesStream() <-chan *BalanceUpdateEvent {
 	updates := make(chan *BalanceUpdateEvent)
-	cb := func(data []byte) error {
+	deferFunc := func() {
+		close(updates)
+	}
+
+	go i.NewStreamRaw(deferFunc, func(fr *websocket.Frame) error {
+		payload := fr.Payload()
+
+		var event UpdateEventType
+		err := json.Unmarshal(payload, &event)
+		if err != nil {
+			return err
+		}
+
+		if event.EventType != AccountUpdateEventTypeBalanceUpdate {
+			return nil
+		}
+
 		u := &BalanceUpdateEvent{}
-		if err := json.Unmarshal(data, u); err != nil {
+		if err = json.Unmarshal(payload, u); err != nil {
 			return err
 		}
 		updates <- u
 
 		return nil
-	}
-	deferFunc := func() {
-		close(updates)
-	}
-
-	go i.stream(AccountUpdateEventTypeBalanceUpdate, deferFunc, cb)
+	})
 
 	return updates
 }
 
 func (i *AccountInfo) AccountStream() <-chan *AccountUpdateEvent {
 	updates := make(chan *AccountUpdateEvent)
-	cb := func(data []byte) error {
+	deferFunc := func() {
+		close(updates)
+	}
+
+	go i.NewStreamRaw(deferFunc, func(fr *websocket.Frame) error {
+		payload := fr.Payload()
+
+		var event UpdateEventType
+		err := json.Unmarshal(payload, &event)
+		if err != nil {
+			return err
+		}
+
+		if event.EventType != AccountUpdateEventTypeOutboundAccountPosition {
+			return nil
+		}
+
 		u := &AccountUpdateEvent{}
-		if err := json.Unmarshal(data, u); err != nil {
+		if err = json.Unmarshal(payload, u); err != nil {
 			return err
 		}
 		updates <- u
 
 		return nil
-	}
-	deferFunc := func() {
-		close(updates)
-	}
-
-	go i.stream(AccountUpdateEventTypeOutboundAccountPosition, deferFunc, cb)
+	})
 
 	return updates
-}
-
-func (i *AccountInfo) stream(eventType AccountUpdateEventType, deferFunc func(), cb func(data []byte) error) {
-	fr := websocket.AcquireFrame()
-	defer websocket.ReleaseFrame(fr)
-	defer deferFunc()
-
-	var event UpdateEventType
-	var err error
-	for {
-		fr.Reset()
-		_, err = i.ReadFrame(fr)
-		if err != nil {
-			i.Error = err
-			return
-		}
-
-		payload := fr.Payload()
-		if payload[0] != '{' && len(payload) == 13 {
-			// heartbeat
-			continue
-		}
-		err = json.Unmarshal(payload, &event)
-		if err != nil {
-			i.Error = err
-			return
-		}
-
-		if event.EventType != eventType {
-			continue
-		}
-
-		err = cb(payload)
-		if err != nil {
-			i.Error = err
-			return
-		}
-	}
 }

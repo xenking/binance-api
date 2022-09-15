@@ -11,7 +11,7 @@ require (
 	github.com/xenking/bytebufferpool v1.1.0
 	github.com/xenking/decimal v1.3.5
 	github.com/xenking/http2 v0.2.0
-	github.com/xenking/websocket v1.0.1
+	github.com/xenking/websocket v1.0.3
 )
 
 require (
@@ -22,6 +22,6 @@ require (
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fastrand v1.1.0 // indirect
-	golang.org/x/sys v0.0.0-20220909162455-aba9fc2a8ff2 // indirect
+	golang.org/x/sys v0.0.0-20220913175220-63ea55921009 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )

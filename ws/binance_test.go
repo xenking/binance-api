@@ -56,7 +56,7 @@ func (s *clientTestSuite) TestDepth_Stream() {
 	defer ws.Close()
 
 	for u := range ws.Stream() {
-		s.Require().NoError(ws.Error)
+		s.Require().NoError(ws.err)
 		s.Require().Equal(symbol, u.Symbol)
 		break
 	}
@@ -84,7 +84,7 @@ func (s *clientTestSuite) TestDepthLevel_Stream() {
 	defer ws.Close()
 
 	for u := range ws.Stream() {
-		s.Require().NoError(ws.Error)
+		s.Require().NoError(ws.err)
 		s.Require().Equal(len(u.Asks), 5)
 		s.Require().Equal(len(u.Bids), 5)
 
@@ -112,7 +112,7 @@ func (s *clientTestSuite) TestKlines_Stream() {
 	defer ws.Close()
 
 	for u := range ws.Stream() {
-		s.Require().NoError(ws.Error)
+		s.Require().NoError(ws.err)
 		s.Require().Equal(symbol, u.Symbol)
 		break
 	}
@@ -134,7 +134,7 @@ func (s *clientTestSuite) TestAllMarketTickers_Stream() {
 	defer ws.Close()
 
 	for u := range ws.Stream() {
-		s.Require().NoError(ws.Error)
+		s.Require().NoError(ws.err)
 		s.Require().NotEmpty(u)
 		break
 	}
@@ -156,7 +156,7 @@ func (s *clientTestSuite) TestAllMarketMiniTickers_Stream() {
 	defer ws.Close()
 
 	for u := range ws.Stream() {
-		s.Require().NoError(ws.Error)
+		s.Require().NoError(ws.err)
 		s.Require().NotEmpty(u)
 		break
 	}
@@ -178,7 +178,7 @@ func (s *clientTestSuite) TestAllBookTickers_Stream() {
 	defer ws.Close()
 
 	for u := range ws.Stream() {
-		s.Require().NoError(ws.Error)
+		s.Require().NoError(ws.err)
 		s.Require().NotEmpty(u)
 		break
 	}
@@ -204,7 +204,7 @@ func (s *clientTestSuite) TestIndivTickers_Stream() {
 	defer ws.Close()
 
 	for u := range ws.Stream() {
-		s.Require().NoError(ws.Error)
+		s.Require().NoError(ws.err)
 		s.Require().Equal(symbol, u.Symbol)
 		break
 	}
@@ -230,7 +230,7 @@ func (s *clientTestSuite) TestIndivMiniTickers_Stream() {
 	defer ws.Close()
 
 	for u := range ws.Stream() {
-		s.Require().NoError(ws.Error)
+		s.Require().NoError(ws.err)
 		s.Require().Equal(symbol, u.Symbol)
 		break
 	}
@@ -256,7 +256,7 @@ func (s *clientTestSuite) TestIndivBookTickers_Stream() {
 	defer ws.Close()
 
 	for u := range ws.Stream() {
-		s.Require().NoError(ws.Error)
+		s.Require().NoError(ws.err)
 		s.Require().Equal(symbol, u.Symbol)
 		break
 	}
@@ -282,7 +282,7 @@ func (s *clientTestSuite) TestAggTrades_Stream() {
 	defer ws.Close()
 
 	for u := range ws.Stream() {
-		s.Require().NoError(ws.Error)
+		s.Require().NoError(ws.err)
 		s.Require().Equal(symbol, u.Symbol)
 		break
 	}
@@ -308,7 +308,7 @@ func (s *clientTestSuite) TestTrades_Stream() {
 	defer ws.Close()
 
 	for u := range ws.Stream() {
-		s.Require().NoError(ws.Error)
+		s.Require().NoError(ws.err)
 		s.Require().Equal(symbol, u.Symbol)
 		break
 	}
@@ -458,6 +458,7 @@ func (s *mockedTestSuite) TestAccountInfo_Read() {
 			written, err := conn.Write(b)
 			s.Require().NoError(err)
 			s.Require().NotZero(written)
+			conn.Ping(nil)
 		}
 	})
 
@@ -480,7 +481,7 @@ func (s *mockedTestSuite) TestAccountInfo_Read() {
 
 	err = s.api.DataStreamClose(key)
 	s.Require().NoError(err)
-	err = ws.Close()
+	err = ws.Shutdown()
 	s.Require().NoError(err)
 }
 
@@ -514,6 +515,7 @@ func (s *mockedTestSuite) TestAccountInfo_BalancesStream() {
 			written, err := conn.Write(b)
 			s.Require().NoError(err)
 			s.Require().NotZero(written)
+			conn.Ping(nil)
 		}
 	})
 
@@ -537,7 +539,7 @@ func (s *mockedTestSuite) TestAccountInfo_BalancesStream() {
 
 	err = s.api.DataStreamClose(key)
 	s.Require().NoError(err)
-	err = ws.Close()
+	err = ws.Shutdown()
 	s.Require().NoError(err)
 }
 
@@ -577,6 +579,7 @@ func (s *mockedTestSuite) TestAccountInfo_AccountStream() {
 			written, err := conn.Write(b)
 			s.Require().NoError(err)
 			s.Require().NotZero(written)
+			conn.Ping(nil)
 		}
 	})
 
@@ -600,7 +603,7 @@ func (s *mockedTestSuite) TestAccountInfo_AccountStream() {
 
 	err = s.api.DataStreamClose(key)
 	s.Require().NoError(err)
-	err = ws.Close()
+	err = ws.Shutdown()
 	s.Require().NoError(err)
 }
 
@@ -676,6 +679,7 @@ func (s *mockedTestSuite) TestAccountInfo_OrdersStream() {
 			written, err := conn.Write(b)
 			s.Require().NoError(err)
 			s.Require().NotZero(written)
+			conn.Ping(nil)
 		}
 	})
 
@@ -699,7 +703,7 @@ func (s *mockedTestSuite) TestAccountInfo_OrdersStream() {
 
 	err = s.api.DataStreamClose(key)
 	s.Require().NoError(err)
-	err = ws.Close()
+	err = ws.Shutdown()
 	s.Require().NoError(err)
 }
 
@@ -757,6 +761,7 @@ func (s *mockedTestSuite) TestAccountInfo_OCOOrdersStream() {
 			written, err := conn.Write(b)
 			s.Require().NoError(err)
 			s.Require().NotZero(written)
+			conn.Ping(nil)
 		}
 	})
 
@@ -780,6 +785,6 @@ func (s *mockedTestSuite) TestAccountInfo_OCOOrdersStream() {
 
 	err = s.api.DataStreamClose(key)
 	s.Require().NoError(err)
-	err = ws.Close()
+	err = ws.Shutdown()
 	s.Require().NoError(err)
 }
