@@ -525,7 +525,7 @@ func (i *AccountInfo) OrdersStream() <-chan *OrderUpdateEvent {
 		payload := fr.Payload()
 
 		var event UpdateEventType
-		err := json.Unmarshal(payload, &event)
+		err := event.UnmarshalJSON(payload)
 		if err != nil {
 			return err
 		}
@@ -556,7 +556,7 @@ func (i *AccountInfo) OCOOrdersStream() <-chan *OCOOrderUpdateEvent {
 		payload := fr.Payload()
 
 		var event UpdateEventType
-		err := json.Unmarshal(payload, &event)
+		err := event.UnmarshalJSON(payload)
 		if err != nil {
 			return err
 		}
@@ -587,7 +587,7 @@ func (i *AccountInfo) BalancesStream() <-chan *BalanceUpdateEvent {
 		payload := fr.Payload()
 
 		var event UpdateEventType
-		err := json.Unmarshal(payload, &event)
+		err := event.UnmarshalJSON(payload)
 		if err != nil {
 			return err
 		}
@@ -618,7 +618,7 @@ func (i *AccountInfo) AccountStream() <-chan *AccountUpdateEvent {
 		payload := fr.Payload()
 
 		var event UpdateEventType
-		err := json.Unmarshal(payload, &event)
+		err := event.UnmarshalJSON(payload)
 		if err != nil {
 			return err
 		}
