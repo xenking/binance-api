@@ -643,6 +643,7 @@ type RateLimit struct {
 	Interval    RateLimitInterval `json:"interval"`
 	IntervalNum int               `json:"intervalNum"`
 	Limit       int               `json:"limit"`
+	Count       int               `json:"count,omitempty"`
 }
 
 type ExchangeFilterType string

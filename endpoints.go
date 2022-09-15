@@ -16,9 +16,10 @@ const (
 	EndpointOrder              = "/api/v3/order"
 	EndpointOrderTest          = "/api/v3/order/test"
 	EndpointOpenOrders         = "/api/v3/openOrders"
-	EndpointCancelReplaceOrder = "/api/v3/cancelReplace"
+	EndpointCancelReplaceOrder = "/api/v3/order/cancelReplace"
 	EndpointOrdersAll          = "/api/v3/allOrders"
 	EndpointAccount            = "/api/v3/account"
 	EndpointAccountTrades      = "/api/v3/myTrades"
+	EndpointRateLimit          = "/api/v3/rateLimit/order"
 	EndpointDataStream         = "/api/v3/userDataStream"
 )

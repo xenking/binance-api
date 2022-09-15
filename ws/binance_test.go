@@ -424,7 +424,7 @@ func (s *mockedTestSuite) TestAccountInfo_Read() {
 			Time:             rand.Uint64(),
 			TradeTime:        rand.Uint64(),
 			OrderCreatedTime: rand.Uint64(),
-			TradeID:          rand.Uint64(),
+			TradeID:          rand.Int63(),
 			OrderID:          rand.Uint64(),
 		},
 		&OCOOrderUpdateEvent{
@@ -623,7 +623,7 @@ func (s *mockedTestSuite) TestAccountInfo_OrdersStream() {
 			Time:             rand.Uint64(),
 			TradeTime:        rand.Uint64(),
 			OrderCreatedTime: rand.Uint64(),
-			TradeID:          rand.Uint64(),
+			TradeID:          rand.Int63(),
 			OrderID:          rand.Uint64(),
 		},
 		&OrderUpdateEvent{
@@ -643,7 +643,7 @@ func (s *mockedTestSuite) TestAccountInfo_OrdersStream() {
 			Time:             rand.Uint64(),
 			TradeTime:        rand.Uint64(),
 			OrderCreatedTime: rand.Uint64(),
-			TradeID:          rand.Uint64(),
+			TradeID:          rand.Int63(),
 			OrderID:          rand.Uint64(),
 		},
 		&OrderUpdateEvent{
@@ -663,7 +663,7 @@ func (s *mockedTestSuite) TestAccountInfo_OrdersStream() {
 			Time:             rand.Uint64(),
 			TradeTime:        rand.Uint64(),
 			OrderCreatedTime: rand.Uint64(),
-			TradeID:          rand.Uint64(),
+			TradeID:          rand.Int63(),
 			OrderID:          rand.Uint64(),
 		},
 	}

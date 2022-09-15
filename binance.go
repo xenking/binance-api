@@ -411,6 +411,7 @@ func (c *Client) CancelOrder(req *CancelOrderReq) (*CancelOrder, error) {
 	return resp, err
 }
 
+// CancelReplaceOrder cancels an existing order and places a new order on the same symbol
 func (c *Client) CancelReplaceOrder(req *CancelReplaceOrderReq) (*CancelReplaceOrder, error) {
 	if req == nil {
 		return nil, ErrNilRequest
@@ -522,6 +523,20 @@ func (c *Client) AccountTrades(req *AccountTradesReq) (*AccountTrades, error) {
 	return resp, err
 }
 
+// OrderRateLimit get the user's current order count usage for all intervals.
+func (c *Client) OrderRateLimit() ([]RateLimit, error) {
+	res, err := c.Do(fasthttp.MethodGet, EndpointRateLimit, nil, true, false)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp []RateLimit
+	err = json.Unmarshal(res, &resp)
+
+	return resp, err
+}
+
+// ExchangeInfo get current exchange trading rules and symbols information
 func (c *Client) ExchangeInfo() (*ExchangeInfo, error) {
 	res, err := c.Do(fasthttp.MethodGet, EndpointExchangeInfo, nil, false, false)
 	if err != nil {
@@ -533,6 +548,7 @@ func (c *Client) ExchangeInfo() (*ExchangeInfo, error) {
 	return resp, err
 }
 
+// ExchangeInfoSymbol get current exchange trading rules and symbol information for a specific symbol
 func (c *Client) ExchangeInfoSymbol(req *ExchangeInfoReq) (*ExchangeInfo, error) {
 	if req == nil {
 		return nil, ErrNilRequest
