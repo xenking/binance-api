@@ -2,7 +2,7 @@
 
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/xenking/binance-api)](https://pkg.go.dev/github.com/xenking/binance-api)
 [![Go Report Card](https://goreportcard.com/badge/github.com/xenking/binance-api)](https://goreportcard.com/report/github.com/xenking/binance-api)
-![Build Status](https://github.com/xenking/binance-api/actions/workflows/main.yml/badge.svg)
+![Build Status](https://github.com/xenking/binance-api/actions/workflows/build.yml/badge.svg)
 [![codecov](https://codecov.io/gh/xenking/binance-api/branch/master/graph/badge.svg)](https://codecov.io/gh/xenking/binance-api)
 
 binance-api is a fast and lightweight Golang implementation for [Binance API](https://github.com/binance/binance-spot-api-docs), providing complete API coverage, and supports both REST API and websockets API
