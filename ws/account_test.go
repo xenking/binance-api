@@ -59,7 +59,7 @@ func (s *accountTestSuite) SetupSuite() {
 
 	s.listenerDone = make(chan struct{}, 1)
 	go func() {
-		http.Serve(s.listener, nil)
+		http.Serve(s.listener, nil) //nolint:errcheck // don't care about error here
 		s.listenerDone <- struct{}{}
 	}()
 
