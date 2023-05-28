@@ -7,6 +7,8 @@ import (
 	"crypto/tls"
 	"encoding/hex"
 	"hash"
+	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -22,7 +24,7 @@ import (
 )
 
 type RestClient interface {
-	Do(method, endpoint string, data interface{}, sign bool, stream bool) ([]byte, error)
+	Do(method, endpoint string, data interface{}, sign, stream bool) ([]byte, error)
 
 	SetWindow(window int)
 	UsedWeight() map[string]int64
@@ -97,7 +99,7 @@ const (
 	HeaderTypeJSON = "application/json"
 	HeaderTypeForm = "application/x-www-form-urlencoded"
 	HeaderAccept   = "Accept"
-	HeaderAPIKey   = "X-MBX-APIKEY" //nolint:gosec
+	HeaderAPIKey   = "X-MBX-APIKEY"
 )
 
 var (
@@ -129,7 +131,7 @@ func newHTTPClient() *fasthttp.HostClient {
 	}
 }
 
-// Do invokes the given API command with the given data
+// Do invoke the given API command with the given data
 // sign indicates whether the api call should be done with signed payload
 // stream indicates if the request is stream related
 func (c *restClient) Do(method, endpoint string, data interface{}, sign, stream bool) ([]byte, error) {
@@ -138,33 +140,26 @@ func (c *restClient) Do(method, endpoint string, data interface{}, sign, stream 
 	if err != nil {
 		return nil, err
 	}
-	encoded := values.Encode()
-	var pb []byte
-	if sign {
-		pb = make([]byte, len(encoded), len(encoded)+116)
-	} else {
-		pb = make([]byte, len(encoded))
-	}
-	copy(pb, encoded)
+	pb := encodeValues(values)
 	// Signed requests require the additional timestamp, window size and signature of the payload
 	// Remark: This is done only to routes with actual data
 	if sign {
 		buf := bytebufferpool.Get()
-		pb = append(pb, "&timestamp="...)                                        //nolint:makezero
-		pb = append(pb, strconv.AppendInt(buf.B, time.Now().UnixMilli(), 10)...) //nolint:makezero
+		pb = append(pb, "&timestamp="...)
+		pb = append(pb, strconv.AppendInt(buf.B, time.Now().UnixMilli(), 10)...)
 
 		buf.Reset()
-		pb = append(pb, "&recvWindow="...)                                //nolint:makezero
-		pb = append(pb, strconv.AppendInt(buf.B, int64(c.window), 10)...) //nolint:makezero
+		pb = append(pb, "&recvWindow="...)
+		pb = append(pb, strconv.AppendInt(buf.B, int64(c.window), 10)...)
 		_, err = c.hmac.Write(pb)
 		if err != nil {
 			return nil, err
 		}
-		pb = append(pb, "&signature="...) //nolint:makezero
+		pb = append(pb, "&signature="...)
 		sum := c.hmac.Sum(nil)
 		enc := make([]byte, len(sum)*2)
 		hex.Encode(enc, sum)
-		pb = append(pb, enc...) //nolint:makezero
+		pb = append(pb, enc...)
 		c.hmac.Reset()
 		bytebufferpool.Put(buf)
 	}
@@ -242,43 +237,6 @@ func (c *restClient) Do(method, endpoint string, data interface{}, sign, stream 
 	return body, err
 }
 
-func parseInterval(header []byte) (interval string, value int, err error) {
-	parseValue := false
-	for i := 0; i < len(header); i++ {
-		c := header[i]
-		switch {
-		case c == ':', c == ' ':
-			parseValue = true
-
-			continue
-		case parseValue:
-			value, err = fasthttp.ParseUint(header[i:])
-
-			return
-		case c >= '0' && c <= '9':
-			continue
-		}
-		interval = string(header[:i+1])
-	}
-
-	return
-}
-
-func getHeader(header, search []byte) []byte {
-	if len(header) == 0 {
-		return nil
-	}
-	if idx := bytes.Index(header, search); idx > 0 {
-		for i := idx + len(search); i < len(header); i++ {
-			if header[i] == '\n' {
-				return header[idx+len(search) : i-1]
-			}
-		}
-	}
-
-	return nil
-}
-
 // SetWindow to specify response time window in milliseconds
 func (c *restClient) SetWindow(window int) {
 	c.window = window
@@ -316,4 +274,71 @@ func (c *restClient) OrderCount() map[string]int64 {
 
 func (c *restClient) RetryAfter() int64 {
 	return atomic.LoadInt64(&c.retryAfter)
+}
+
+func encodeValues(v url.Values) []byte {
+	if v == nil {
+		return nil
+	}
+	var buf []byte
+	keys := make([]string, 0, len(v))
+	for k := range v {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		vs := v[k]
+		if len(vs) == 0 {
+			continue
+		}
+		if len(buf) > 0 {
+			buf = append(buf, '&')
+		}
+		buf = append(buf, url.QueryEscape(k)...)
+		buf = append(buf, '=')
+		if len(vs) == 1 {
+			buf = append(buf, url.QueryEscape(vs[0])...)
+			continue
+		}
+		vss, _ := json.Marshal(&vs)
+		buf = append(buf, url.QueryEscape(string(vss))...)
+	}
+	return buf
+}
+
+func parseInterval(header []byte) (interval string, value int, err error) {
+	parseValue := false
+	for i := 0; i < len(header); i++ {
+		c := header[i]
+		switch {
+		case c == ':', c == ' ':
+			parseValue = true
+
+			continue
+		case parseValue:
+			value, err = fasthttp.ParseUint(header[i:])
+
+			return
+		case c >= '0' && c <= '9':
+			continue
+		}
+		interval = string(header[:i+1])
+	}
+
+	return
+}
+
+func getHeader(header, search []byte) []byte {
+	if len(header) == 0 {
+		return nil
+	}
+	if idx := bytes.Index(header, search); idx > 0 {
+		for i := idx + len(search); i < len(header); i++ {
+			if header[i] == '\n' {
+				return header[idx+len(search) : i-1]
+			}
+		}
+	}
+
+	return nil
 }

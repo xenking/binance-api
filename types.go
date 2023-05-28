@@ -23,13 +23,14 @@ const (
 type OrderStatus string
 
 const (
-	OrderStatusNew      OrderStatus = "NEW"
-	OrderStatusPartial  OrderStatus = "PARTIALLY_FILLED"
-	OrderStatusFilled   OrderStatus = "FILLED"
-	OrderStatusCanceled OrderStatus = "CANCELED"
-	OrderStatusPending  OrderStatus = "PENDING_CANCEL"
-	OrderStatusRejected OrderStatus = "REJECTED"
-	OrderStatusExpired  OrderStatus = "EXPIRED"
+	OrderStatusNew            OrderStatus = "NEW"
+	OrderStatusPartial        OrderStatus = "PARTIALLY_FILLED"
+	OrderStatusFilled         OrderStatus = "FILLED"
+	OrderStatusCanceled       OrderStatus = "CANCELED"
+	OrderStatusPending        OrderStatus = "PENDING_CANCEL"
+	OrderStatusRejected       OrderStatus = "REJECTED"
+	OrderStatusExpired        OrderStatus = "EXPIRED"
+	OrderStatusExpiredInMatch OrderStatus = "EXPIRED_IN_MATCH"
 )
 
 type OrderFailure string
@@ -73,65 +74,82 @@ const (
 const MinStrategyType = 1000000
 
 type OrderReq struct {
-	Symbol           string        `url:"symbol"`
-	Side             OrderSide     `url:"side"`
-	Type             OrderType     `url:"type"`
-	TimeInForce      TimeInForce   `url:"timeInForce,omitempty"`
-	Quantity         string        `url:"quantity,omitempty"`
-	QuoteQuantity    string        `url:"quoteOrderQty,omitempty"`
-	Price            string        `url:"price,omitempty"`
-	NewClientOrderID string        `url:"newClientOrderId,omitempty"`
-	StrategyID       int           `url:"strategyId,omitempty"`
-	StrategyType     int           `url:"strategyType,omitempty"` // Should be more than 1000000
-	StopPrice        string        `url:"stopPrice,omitempty"`
-	TrailingDelta    int64         `url:"trailingDelta,omitempty"` // Used with STOP_LOSS, STOP_LOSS_LIMIT, TAKE_PROFIT, and TAKE_PROFIT_LIMIT orders.
-	IcebergQty       string        `url:"icebergQty,omitempty"`
-	OrderRespType    OrderRespType `url:"newOrderRespType,omitempty"`
+	Symbol                  string                  `url:"symbol"`
+	Side                    OrderSide               `url:"side"`
+	Type                    OrderType               `url:"type"`
+	TimeInForce             TimeInForce             `url:"timeInForce,omitempty"`
+	Quantity                string                  `url:"quantity,omitempty"`
+	QuoteQuantity           string                  `url:"quoteOrderQty,omitempty"`
+	Price                   string                  `url:"price,omitempty"`
+	NewClientOrderID        string                  `url:"newClientOrderId,omitempty"`
+	StrategyID              int                     `url:"strategyId,omitempty"`
+	StrategyType            int                     `url:"strategyType,omitempty"` // Should be more than 1000000
+	StopPrice               string                  `url:"stopPrice,omitempty"`
+	TrailingDelta           int64                   `url:"trailingDelta,omitempty"` // Used with STOP_LOSS, STOP_LOSS_LIMIT, TAKE_PROFIT, and TAKE_PROFIT_LIMIT orders.
+	IcebergQty              string                  `url:"icebergQty,omitempty"`
+	OrderRespType           OrderRespType           `url:"newOrderRespType,omitempty"`
+	SelfTradePreventionMode SelfTradePreventionMode `url:"selfTradePreventionMode,omitempty"`
 }
 
 type OrderRespAck struct {
 	Symbol        string `json:"symbol"`
-	OrderID       uint64 `json:"orderId"`
+	OrderID       int64  `json:"orderId"`
 	OrderListID   int64  `json:"orderListId"`
 	ClientOrderID string `json:"clientOrderId"`
-	TransactTime  uint64 `json:"transactTime"`
+	TransactTime  int64  `json:"transactTime"`
 }
 
 type OrderRespResult struct {
-	Symbol              string      `json:"symbol"`
-	OrderID             uint64      `json:"orderId"`
-	OrderListID         int         `json:"orderListId"`
-	ClientOrderID       string      `json:"clientOrderId"`
-	TransactTime        uint64      `json:"transactTime"`
-	Price               string      `json:"price"`
-	OrigQty             string      `json:"origQty"`
-	ExecutedQty         string      `json:"executedQty"`
-	CummulativeQuoteQty string      `json:"cummulativeQuoteQty"`
-	Status              OrderStatus `json:"status"`
-	TimeInForce         string      `json:"timeInForce"`
-	Type                OrderType   `json:"type"`
-	Side                OrderSide   `json:"side"`
-	StrategyID          int         `json:"strategyId,omitempty"`
-	StrategyType        int         `json:"strategyType,omitempty"`
+	Symbol                  string                  `json:"symbol"`
+	OrderID                 int64                   `json:"orderId"`
+	OrderListID             int                     `json:"orderListId"`
+	ClientOrderID           string                  `json:"clientOrderId"`
+	TransactTime            int64                   `json:"transactTime"`
+	Price                   string                  `json:"price"`
+	OrigQty                 string                  `json:"origQty"`
+	ExecutedQty             string                  `json:"executedQty"`
+	CummulativeQuoteQty     string                  `json:"cummulativeQuoteQty"`
+	Status                  OrderStatus             `json:"status"`
+	TimeInForce             string                  `json:"timeInForce"`
+	Type                    OrderType               `json:"type"`
+	Side                    OrderSide               `json:"side"`
+	WorkingTime             int64                   `json:"workingTime"`
+	SelfTradePreventionMode SelfTradePreventionMode `json:"selfTradePreventionMode,omitempty"`
+	IcebergQty              string                  `json:"IcebergQty"`
+	StopPrice               string                  `json:"stopPrice"`
+	PreventedMatchID        int64                   `json:"preventedMatchId,omitempty"`
+	PreventedQuantity       string                  `json:"preventedQuantity,omitempty"`
+	StrategyID              int                     `json:"strategyId,omitempty"`
+	StrategyType            int                     `json:"strategyType,omitempty"`
+	TrailingDelta           int                     `json:"trailingDelta,omitempty"`
+	TrailingTime            int64                   `json:"trailingTime,omitempty"`
 }
 
 type OrderRespFull struct {
-	Symbol              string              `json:"symbol"`
-	OrderID             uint64              `json:"orderId"`
-	OrderListID         int64               `json:"orderListId"`
-	ClientOrderID       string              `json:"clientOrderId"`
-	TransactTime        uint64              `json:"transactTime"`
-	Price               string              `json:"price"`
-	OrigQty             string              `json:"origQty"`
-	ExecutedQty         string              `json:"executedQty"`
-	CummulativeQuoteQty string              `json:"cummulativeQuoteQty"`
-	Status              OrderStatus         `json:"status"`
-	TimeInForce         string              `json:"timeInForce"`
-	Type                OrderType           `json:"type"`
-	Side                OrderSide           `json:"side"`
-	StrategyID          int                 `json:"strategyId,omitempty"`
-	StrategyType        int                 `json:"strategyType,omitempty"`
-	Fills               []OrderRespFullFill `json:"fills"`
+	Symbol                  string                  `json:"symbol"`
+	OrderID                 int64                   `json:"orderId"`
+	OrderListID             int64                   `json:"orderListId"`
+	ClientOrderID           string                  `json:"clientOrderId"`
+	TransactTime            int64                   `json:"transactTime"`
+	Price                   string                  `json:"price"`
+	OrigQty                 string                  `json:"origQty"`
+	ExecutedQty             string                  `json:"executedQty"`
+	CummulativeQuoteQty     string                  `json:"cummulativeQuoteQty"`
+	Status                  OrderStatus             `json:"status"`
+	TimeInForce             string                  `json:"timeInForce"`
+	Type                    OrderType               `json:"type"`
+	Side                    OrderSide               `json:"side"`
+	WorkingTime             int64                   `json:"workingTime"`
+	SelfTradePreventionMode SelfTradePreventionMode `json:"selfTradePreventionMode,omitempty"`
+	IcebergQty              string                  `json:"IcebergQty"`
+	StopPrice               string                  `json:"stopPrice"`
+	PreventedMatchID        int64                   `json:"preventedMatchId,omitempty"`
+	PreventedQuantity       string                  `json:"preventedQuantity,omitempty"`
+	StrategyID              int                     `json:"strategyId,omitempty"`
+	StrategyType            int                     `json:"strategyType,omitempty"`
+	TrailingDelta           int                     `json:"trailingDelta,omitempty"`
+	TrailingTime            int64                   `json:"trailingTime,omitempty"`
+	Fills                   []OrderRespFullFill     `json:"fills"`
 }
 
 type OrderRespFullFill struct {
@@ -139,10 +157,11 @@ type OrderRespFullFill struct {
 	Qty             string `json:"qty"`
 	Commission      string `json:"commission"`
 	CommissionAsset string `json:"commissionAsset"`
+	TradeID         int64  `json:"tradeId"`
 }
 
 type ServerTime struct {
-	ServerTime uint64 `json:"serverTime"`
+	ServerTime int64 `json:"serverTime"`
 }
 
 type KlineInterval string
@@ -173,20 +192,20 @@ const (
 
 // DepthReq are used to specify symbol to retrieve order book for
 type DepthReq struct {
-	Symbol string `url:"symbol"` // Symbol is the symbol to fetch data for
-	Limit  int    `url:"limit"`  // Limit is the number of order book items to retrieve. Default 100; Max 5000
+	Symbol string `url:"symbol"`          // Symbol is the symbol to fetch data for
+	Limit  int    `url:"limit,omitempty"` // Limit is the number of order book items to retrieve. Default 100; Max 5000
 }
 
 // DepthElem represents a specific order in the order book
 type DepthElem struct {
-	Quantity decimal.Decimal `json:"quantity"`
 	Price    decimal.Decimal `json:"price"`
+	Quantity decimal.Decimal `json:"quantity"`
 }
 
 // UnmarshalJSON unmarshal the given depth raw data and converts to depth struct
 func (b *DepthElem) UnmarshalJSON(data []byte) error {
 	if b == nil {
-		return ErrNilUnmarshal
+		return ErrEmptyJSONResponse
 	}
 
 	if len(data) <= 4 {
@@ -221,7 +240,7 @@ func (b *DepthElem) UnmarshalJSON(data []byte) error {
 }
 
 type Depth struct {
-	LastUpdateID int         `json:"lastUpdateId"`
+	LastUpdateID int64       `json:"lastUpdateId"`
 	Bids         []DepthElem `json:"bids"`
 	Asks         []DepthElem `json:"asks"`
 }
@@ -233,15 +252,15 @@ const (
 
 // TradeReq are used to specify symbol to get recent trades
 type TradeReq struct {
-	Symbol string `url:"symbol"` // Symbol is the symbol to fetch data for
-	Limit  int    `url:"limit"`  // Limit is the maximal number of elements to receive. Default 500; Max 1000
+	Symbol string `url:"symbol"`          // Symbol is the symbol to fetch data for
+	Limit  int    `url:"limit,omitempty"` // Limit is the maximal number of elements to receive. Default 500; Max 1000
 }
 
 // HistoricalTradeReq are used to specify symbol to get older trades
 type HistoricalTradeReq struct {
-	Symbol string `url:"symbol"` // Symbol is the symbol to fetch data for
-	Limit  int    `url:"limit"`  // Limit is the maximal number of elements to receive. Default 500; Max 1000
-	FromID int    `url:"fromId"` // FromID is trade ID to fetch from. Default gets most recent trades
+	Symbol string `url:"symbol"`           // Symbol is the symbol to fetch data for
+	Limit  int    `url:"limit,omitempty"`  // Limit is the maximal number of elements to receive. Default 500; Max 1000
+	FromID int64  `url:"fromId,omitempty"` // FromID is trade ID to fetch from. Default gets most recent trades
 }
 
 type Trade struct {
@@ -260,25 +279,25 @@ const (
 )
 
 type KlinesReq struct {
-	Symbol    string        `url:"symbol"`   // Symbol is the symbol to fetch data for
-	Interval  KlineInterval `url:"interval"` // Interval is the interval for each kline/candlestick
-	Limit     int           `url:"limit"`    // Limit is the maximal number of elements to receive. Default 500; Max 1000
-	StartTime uint64        `url:"startTime,omitempty"`
-	EndTime   uint64        `url:"endTime,omitempty"`
+	Symbol    string        `url:"symbol"`          // Symbol is the symbol to fetch data for
+	Interval  KlineInterval `url:"interval"`        // Interval is the interval for each kline/candlestick
+	Limit     int           `url:"limit,omitempty"` // Limit is the maximal number of elements to receive. Default 500; Max 1000
+	StartTime int64         `url:"startTime,omitempty"`
+	EndTime   int64         `url:"endTime,omitempty"`
 }
 
-type Klines struct {
-	OpenTime                 uint64
+type Kline struct {
 	OpenPrice                decimal.Decimal
-	High                     decimal.Decimal
-	Low                      decimal.Decimal
+	HighPrice                decimal.Decimal
+	LowPrice                 decimal.Decimal
 	ClosePrice               decimal.Decimal
 	Volume                   decimal.Decimal
-	CloseTime                uint64
 	QuoteAssetVolume         decimal.Decimal
-	Trades                   int
 	TakerBuyBaseAssetVolume  decimal.Decimal
 	TakerBuyQuoteAssetVolume decimal.Decimal
+	OpenTime                 int64
+	CloseTime                int64
+	Trades                   int
 }
 
 var (
@@ -287,9 +306,9 @@ var (
 )
 
 // UnmarshalJSON unmarshal the given depth raw data and converts to depth struct
-func (b *Klines) UnmarshalJSON(data []byte) error {
+func (b *Kline) UnmarshalJSON(data []byte) error {
 	if b == nil {
-		return ErrNilUnmarshal
+		return ErrEmptyJSONResponse
 	}
 	if len(data) == 0 {
 		return nil
@@ -303,16 +322,16 @@ func (b *Klines) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return ErrInvalidJSON
 	}
-	b.OpenTime = uint64(u)
+	b.OpenTime = int64(u)
 	b.OpenPrice, err = decimal.NewFromString(b2s(tokens[1]))
 	if err != nil {
 		return ErrInvalidJSON
 	}
-	b.High, err = decimal.NewFromString(b2s(tokens[2]))
+	b.HighPrice, err = decimal.NewFromString(b2s(tokens[2]))
 	if err != nil {
 		return ErrInvalidJSON
 	}
-	b.Low, err = decimal.NewFromString(b2s(tokens[3]))
+	b.LowPrice, err = decimal.NewFromString(b2s(tokens[3]))
 	if err != nil {
 		return ErrInvalidJSON
 	}
@@ -328,7 +347,7 @@ func (b *Klines) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return ErrInvalidJSON
 	}
-	b.CloseTime = uint64(u)
+	b.CloseTime = int64(u)
 	b.QuoteAssetVolume, err = decimal.NewFromString(b2s(tokens[7]))
 	if err != nil {
 		return ErrInvalidJSON
@@ -362,6 +381,10 @@ type BookTickerReq struct {
 	Symbol string `url:"symbol"`
 }
 
+type BookTickersReq struct {
+	Symbols []string `url:"symbols,omitempty"`
+}
+
 type BookTicker struct {
 	Symbol   string `json:"symbol"`
 	BidPrice string `json:"bidPrice"`
@@ -370,13 +393,85 @@ type BookTicker struct {
 	AskQty   string `json:"askQty"`
 }
 
-// TickerReq represents the request for a specified ticker
 type TickerReq struct {
-	Symbol string `url:"symbol"`
+	Symbol     string           `url:"symbol"`
+	WindowSize TickerWindowSize `url:"windowSize,omitempty"`
+	RespType   TickerRespType   `url:"type,omitempty"`
 }
 
-// TickerStats is the stats for a specific symbol
-type TickerStats struct {
+type TickersReq struct {
+	Symbols    []string         `url:"symbols,omitempty"`
+	WindowSize TickerWindowSize `url:"windowSize,omitempty"`
+	RespType   TickerRespType   `url:"type,omitempty"`
+}
+
+// TickerWindowSize used to compute statistics will be no more than 59999ms from the requested windowSize.
+// Defaults to 1d if no parameter provided
+// Supported windowSize values:
+// 1m,2m....59m for minutes
+// 1h, 2h....23h - for hours
+// 1d...7d - for days
+// Units cannot be combined (e.g. 1d2h is not allowed)
+type TickerWindowSize string
+
+func (s TickerWindowSize) IsValid() bool {
+	if len(s) < 2 || len(s) > 3 {
+		return false
+	}
+
+	switch s[(len(s) - 1)] {
+	case 'm':
+		if s[0] < '1' || s[0] > '9' {
+			return false
+		}
+		if len(s) < 3 {
+			break
+		}
+		if s[0] > '5' || s[0] < '1' {
+			return false
+		}
+	case 'h':
+		if s[0] < '1' || s[0] > '9' {
+			return false
+		}
+		if len(s) < 3 {
+			break
+		}
+		if s[0] == '2' && s[1] > '3' || (s[0] != '1' && s[0] != '2') {
+			return false
+		}
+	case 'd':
+		if s[0] < '1' || s[0] > '7' {
+			return false
+		}
+	default:
+		return false
+	}
+
+	return true
+}
+
+// Ticker24hReq represents the request for a specified ticker
+type Ticker24hReq struct {
+	Symbol   string         `url:"symbol"`
+	RespType TickerRespType `url:"type,omitempty"`
+}
+
+// Tickers24hReq represents the request for a specified tickers
+type Tickers24hReq struct {
+	Symbols  []string       `url:"symbols,omitempty"`
+	RespType TickerRespType `url:"type,omitempty"`
+}
+
+type TickerRespType string
+
+const (
+	TickerRespTypeFull TickerRespType = "FULL"
+	TickerRespTypeMini TickerRespType = "MINI"
+)
+
+// TickerStatFull is the stats for a specific symbol
+type TickerStatFull struct {
 	Symbol             string `json:"symbol"`
 	PriceChange        string `json:"priceChange"`
 	PriceChangePercent string `json:"priceChangePercent"`
@@ -391,15 +486,52 @@ type TickerStats struct {
 	LowPrice           string `json:"lowPrice"`  // LowPrice is 24hr low price
 	Volume             string `json:"volume"`
 	QuoteVolume        string `json:"quoteVolume"`
-	OpenTime           uint64 `json:"openTime"`
-	CloseTime          uint64 `json:"closeTime"`
-	FirstID            int    `json:"firstId"`
-	LastID             int    `json:"lastId"`
+	OpenTime           int64  `json:"openTime"`
+	CloseTime          int64  `json:"closeTime"`
+	FirstID            int64  `json:"firstId"`
+	LastID             int64  `json:"lastId"`
+	Count              int    `json:"count"`
+}
+
+type TickerStatMini struct {
+	Symbol      string `json:"symbol"`
+	OpenPrice   string `json:"openPrice"`
+	HighPrice   string `json:"highPrice"` // HighPrice is 24hr high price
+	LowPrice    string `json:"lowPrice"`  // LowPrice is 24hr low price
+	LastPrice   string `json:"lastPrice"`
+	Volume      string `json:"volume"`
+	QuoteVolume string `json:"quoteVolume"`
+	OpenTime    int64  `json:"openTime"`
+	CloseTime   int64  `json:"closeTime"`
+	FirstID     int64  `json:"firstId"`
+	LastID      int64  `json:"lastId"`
+	Count       int    `json:"count"`
+}
+
+type TickerStat struct {
+	Symbol             string `json:"symbol"`
+	PriceChange        string `json:"priceChange"`
+	PriceChangePercent string `json:"priceChangePercent"`
+	WeightedAvgPrice   string `json:"weightedAvgPrice"`
+	OpenPrice          string `json:"openPrice"`
+	HighPrice          string `json:"highPrice"` // HighPrice is 24hr high price
+	LowPrice           string `json:"lowPrice"`  // LowPrice is 24hr low price
+	LastPrice          string `json:"lastPrice"`
+	Volume             string `json:"volume"`
+	QuoteVolume        string `json:"quoteVolume"`
+	OpenTime           int64  `json:"openTime"`
+	CloseTime          int64  `json:"closeTime"`
+	FirstID            int64  `json:"firstId"`
+	LastID             int64  `json:"lastId"`
 	Count              int    `json:"count"`
 }
 
 type TickerPriceReq struct {
 	Symbol string `url:"symbol"`
+}
+
+type TickerPricesReq struct {
+	Symbols []string `url:"symbols,omitempty"`
 }
 
 type SymbolPrice struct {
@@ -411,57 +543,85 @@ type SymbolPrice struct {
 // Remark: Either OrderID or OrigOrderiD must be set
 type QueryOrderReq struct {
 	Symbol            string `url:"symbol"`
-	OrderID           uint64 `url:"orderId,omitempty"`
+	OrderID           int64  `url:"orderId,omitempty"`
 	OrigClientOrderID string `url:"origClientOrderId,omitempty"`
 }
 
 type QueryOrder struct {
-	Symbol              string      `json:"symbol"`
-	OrderID             uint64      `json:"orderId"`
-	OrderListID         int64       `json:"orderListId"`
-	ClientOrderID       string      `json:"clientOrderId"`
-	Price               string      `json:"price"`
-	OrigQty             string      `json:"origQty"`
-	ExecutedQty         string      `json:"executedQty"`
-	CummulativeQuoteQty string      `json:"cummulativeQuoteQty"`
-	Status              OrderStatus `json:"status"`
-	TimeInForce         TimeInForce `json:"timeInForce"`
-	Type                OrderType   `json:"type"`
-	Side                OrderSide   `json:"side"`
-	StopPrice           string      `json:"stopPrice"`
-	IcebergQty          string      `json:"IcebergQty"`
-	Time                uint64      `json:"time"`
-	UpdateTime          uint64      `json:"updateTime"`
-	OrigQuoteOrderQty   string      `json:"origQuoteOrderQty"`
-	StrategyID          int         `json:"strategyId,omitempty"`
-	StrategyType        int         `json:"strategyType,omitempty"`
+	Symbol                  string                  `json:"symbol"`
+	OrderID                 int64                   `json:"orderId"`
+	OrderListID             int64                   `json:"orderListId"`
+	ClientOrderID           string                  `json:"clientOrderId"`
+	Price                   string                  `json:"price"`
+	OrigQty                 string                  `json:"origQty"`
+	ExecutedQty             string                  `json:"executedQty"`
+	CummulativeQuoteQty     string                  `json:"cummulativeQuoteQty"`
+	Status                  OrderStatus             `json:"status"`
+	TimeInForce             TimeInForce             `json:"timeInForce"`
+	Type                    OrderType               `json:"type"`
+	Side                    OrderSide               `json:"side"`
+	Time                    int64                   `json:"time"`
+	UpdateTime              int64                   `json:"updateTime"`
+	IsWorking               bool                    `json:"isWorking"`
+	WorkingTime             int64                   `json:"workingTime"`
+	OrigQuoteOrderQty       string                  `json:"origQuoteOrderQty"`
+	SelfTradePreventionMode SelfTradePreventionMode `json:"selfTradePreventionMode,omitempty"`
+	IcebergQty              string                  `json:"IcebergQty"`
+	StopPrice               string                  `json:"stopPrice"`
+	PreventedMatchID        int64                   `json:"preventedMatchId,omitempty"`
+	PreventedQuantity       string                  `json:"preventedQuantity,omitempty"`
+	StrategyID              int                     `json:"strategyId,omitempty"`
+	StrategyType            int                     `json:"strategyType,omitempty"`
+	TrailingDelta           int                     `json:"trailingDelta,omitempty"`
+	TrailingTime            int64                   `json:"trailingTime,omitempty"`
 }
 
 // Remark: Either OrderID or OrigOrderID must be set
 type CancelOrderReq struct {
-	Symbol            string `url:"symbol"`
-	OrderID           uint64 `url:"orderId,omitempty"`
-	OrigClientOrderID string `url:"origClientOrderId,omitempty"`
-	NewClientOrderID  string `url:"newClientOrderId,omitempty"`
+	Symbol             string            `url:"symbol"`
+	OrderID            int64             `url:"orderId,omitempty"`
+	OrigClientOrderID  string            `url:"origClientOrderId,omitempty"`
+	NewClientOrderID   string            `url:"newClientOrderId,omitempty"`
+	CancelRestrictions CancelRestriction `url:"cancelRestrictions,omitempty"`
 }
 
+type CancelRestriction string
+
+const (
+	CancelRestrictionOnlyNew             CancelRestriction = "ONLY_NEW"
+	CancelRestrictionOnlyPartiallyFilled CancelRestriction = "ONLY_PARTIALLY_FILLED"
+)
+
 type CancelOrder struct {
-	Symbol              string      `json:"symbol"`
-	OrigClientOrderID   string      `json:"origClientOrderId"`
-	OrderID             uint64      `json:"orderId"`
-	OrderListID         int64       `json:"orderListId"`
-	ClientOrderID       string      `json:"clientOrderId"`
-	Price               string      `json:"price"`
-	OrigQty             string      `json:"origQty"`
-	ExecutedQty         string      `json:"executedQty"`
-	CummulativeQuoteQty string      `json:"cummulativeQuoteQty"`
-	Status              OrderStatus `json:"status"`
-	TimeInForce         TimeInForce `json:"timeInForce"`
-	Type                OrderType   `json:"type"`
-	Side                OrderSide   `json:"side"`
-	StrategyID          int         `json:"strategyId,omitempty"`
-	StrategyType        int         `json:"strategyType,omitempty"`
+	Symbol                  string                  `json:"symbol"`
+	OrigClientOrderID       string                  `json:"origClientOrderId"`
+	OrderID                 int64                   `json:"orderId"`
+	OrderListID             int64                   `json:"orderListId"`
+	ClientOrderID           string                  `json:"clientOrderId"`
+	Price                   string                  `json:"price"`
+	OrigQty                 string                  `json:"origQty"`
+	ExecutedQty             string                  `json:"executedQty"`
+	CummulativeQuoteQty     string                  `json:"cummulativeQuoteQty"`
+	Status                  OrderStatus             `json:"status"`
+	TimeInForce             TimeInForce             `json:"timeInForce"`
+	Type                    OrderType               `json:"type"`
+	Side                    OrderSide               `json:"side"`
+	SelfTradePreventionMode SelfTradePreventionMode `json:"selfTradePreventionMode,omitempty"`
+	IcebergQty              string                  `json:"IcebergQty"`
+	StopPrice               string                  `json:"stopPrice"`
+	PreventedMatchID        int64                   `json:"preventedMatchId,omitempty"`
+	PreventedQuantity       string                  `json:"preventedQuantity,omitempty"`
+	StrategyID              int                     `json:"strategyId,omitempty"`
+	StrategyType            int                     `json:"strategyType,omitempty"`
+	TrailingDelta           int                     `json:"trailingDelta,omitempty"`
+	TrailingTime            int64                   `json:"trailingTime,omitempty"`
 }
+
+type CancelOCOOrderType struct {
+	ContingencyType ContingencyType `json:"contingencyType"`
+}
+
+type CancelOCOOrder struct{}
 
 type CancelReplaceResult string
 
@@ -481,8 +641,9 @@ const (
 // Note: Either CancelOrderID or CancelOrigClientOrderID must be set
 type CancelReplaceOrderReq struct {
 	OrderReq
+	CancelRestrictions      CancelRestriction `url:"cancelRestrictions,omitempty"`
 	CancelReplaceMode       CancelReplaceMode `url:"cancelReplaceMode"`
-	CancelOrderID           uint64            `url:"cancelOrderId,omitempty"`
+	CancelOrderID           int64             `url:"cancelOrderId,omitempty"`
 	CancelOrigClientOrderID string            `url:"cancelOrigClientOrderId,omitempty"`
 	CancelNewClientOrderID  string            `url:"cancelNewClientOrderId,omitempty"`
 }
@@ -490,12 +651,12 @@ type CancelReplaceOrderReq struct {
 type CancelReplaceOrder struct {
 	CancelResponse   CancelOrder         `json:"cancelResponse"`
 	NewOrderResponse *OrderRespFull      `json:"newOrderResponse,omitempty"`
-	CancelStatus     CancelReplaceResult `json:"cancelResult"`
+	CancelResult     CancelReplaceResult `json:"cancelResult"`
 	NewOrderResult   CancelReplaceResult `json:"newOrderResult"`
 }
 
 type OpenOrdersReq struct {
-	Symbol string `url:"symbol"`
+	Symbol string `url:"symbol,omitempty"`
 }
 
 type CancelOpenOrdersReq struct {
@@ -511,10 +672,74 @@ const (
 // Remark: If orderId is set, it will get orders >= that orderId. Otherwise most recent orders are returned
 type AllOrdersReq struct {
 	Symbol    string `url:"symbol"`            // Symbol is the symbol to fetch orders for
-	OrderID   uint64 `url:"orderId,omitempty"` // OrderID, if set, will filter all recent orders newer from the given ID
+	OrderID   int64  `url:"orderId,omitempty"` // OrderID, if set, will filter all recent orders newer from the given ID
 	Limit     int    `url:"limit,omitempty"`   // Limit is the maximal number of elements to receive. Default 500; Max 1000
-	StartTime uint64 `url:"startTime,omitempty"`
-	EndTime   uint64 `url:"endTime,omitempty"`
+	StartTime int64  `url:"startTime,omitempty"`
+	EndTime   int64  `url:"endTime,omitempty"`
+}
+
+type OCOReq struct {
+	Symbol                  string                  `url:"symbol"`
+	Side                    OrderSide               `url:"side"`
+	Type                    OrderType               `url:"type"`
+	Quantity                string                  `url:"quantity"`
+	Price                   string                  `url:"price"`
+	StopPrice               string                  `url:"stopPrice"`
+	ListClientOrderID       string                  `url:"listClientOrderId,omitempty"`
+	LimitClientOrderID      string                  `url:"limitClientOrderId,omitempty"`
+	LimitStrategyID         int                     `url:"limitStrategyId,omitempty"` // Should be more than 1000000
+	LimitStrategyType       int                     `url:"limitStrategyType,omitempty"`
+	LimitIcebergQty         string                  `url:"limitIcebergQty,omitempty"`
+	TrailingDelta           int64                   `url:"trailingDelta,omitempty"`
+	StopClientOrderID       string                  `url:"stopClientOrderId,omitempty"`
+	StopStrategyID          int                     `url:"stopStrategyId,omitempty"` // Should be more than 1000000
+	StopStrategyType        int                     `url:"stopStrategyType,omitempty"`
+	StopLimitPrice          string                  `url:"stopLimitPrice,omitempty"`
+	StopIcebergQty          string                  `url:"stopIcebergQty,omitempty"`
+	StopLimitTimeInForce    TimeInForce             `url:"stopLimitTimeInForce,omitempty"`
+	OrderRespType           OrderRespType           `url:"newOrderRespType,omitempty"`
+	SelfTradePreventionMode SelfTradePreventionMode `url:"selfTradePreventionMode,omitempty"`
+}
+
+type OCOOrder struct {
+	Symbol            string               `json:"symbol"`
+	OrderListID       int64                `json:"orderListId"`
+	ContingencyType   ContingencyType      `json:"contingencyType"`
+	ListStatusType    OCOStatus            `json:"listStatusType"`
+	ListOrderStatus   OCOOrderStatus       `json:"listOrderStatus"`
+	ListClientOrderID string               `json:"listClientOrderId"`
+	TransactionTime   int64                `json:"transactionTime"`
+	Orders            []OCOOrderStatusResp `json:"orders"`
+	OrderReports      []OrderRespFull      `json:"orderReports"`
+}
+
+type OCOOrderStatusResp struct {
+	Symbol        string `json:"symbol"`
+	OrderID       int    `json:"orderId"`
+	ClientOrderID string `json:"clientOrderId"`
+}
+
+// Remark: Either OrderListID or ListClientOrderID must be set
+type CancelOCOReq struct {
+	Symbol            string `url:"symbol"`
+	OrderListID       int64  `url:"orderListId,omitempty"`
+	ListClientOrderID string `url:"listClientOrderId,omitempty"`
+	NewClientOrderID  string `url:"newClientOrderId,omitempty"`
+}
+
+// QueryOCOReq represents the request for querying an OCO order
+// Remark: Either OrderID or OrigOrderiD must be set
+type QueryOCOReq struct {
+	OrderListID       int64  `url:"orderListId,omitempty"`
+	ListClientOrderID string `url:"listClientOrderId,omitempty"`
+}
+
+// AllOCOReq represents the request used for querying OCO orders
+type AllOCOReq struct {
+	FromID    int64 `url:"fromId,omitempty"` // If supplied, neither startTime or endTime can be provided
+	Limit     int   `url:"limit,omitempty"`  // Limit is the maximal number of elements to receive. Default 500; Max 1000
+	StartTime int64 `url:"startTime,omitempty"`
+	EndTime   int64 `url:"endTime,omitempty"`
 }
 
 type Balance struct {
@@ -523,29 +748,31 @@ type Balance struct {
 	Locked string `json:"locked"`
 }
 
-type AccountType string
+type PermissionType string
 
 const (
-	AccountTypeSpot      AccountType = "SPOT"
-	AccountTypeMargin    AccountType = "MARGIN"
-	AccountTypeLeveraged AccountType = "LEVERAGED"
-	AccountTypeGRP2      AccountType = "TRD_GRP_002"
-	AccountTypeGRP3      AccountType = "TRD_GRP_003"
-	AccountTypeGRP4      AccountType = "TRD_GRP_004"
-	AccountTypeGRP5      AccountType = "TRD_GRP_005"
+	PermissionTypeSpot      PermissionType = "SPOT"
+	PermissionTypeMargin    PermissionType = "MARGIN"
+	PermissionTypeLeveraged PermissionType = "LEVERAGED"
+	PermissionTypeGRP2      PermissionType = "TRD_GRP_002"
+	PermissionTypeGRP3      PermissionType = "TRD_GRP_003"
+	PermissionTypeGRP4      PermissionType = "TRD_GRP_004"
+	PermissionTypeGRP5      PermissionType = "TRD_GRP_005"
+	PermissionTypeGRP6      PermissionType = "TRD_GRP_006"
+	PermissionTypeGRP7      PermissionType = "TRD_GRP_007"
 )
 
 type AccountInfo struct {
-	MakerCommission  int  `json:"makerCommission"`
-	TakerCommission  int  `json:"takerCommission"`
-	BuyerCommission  int  `json:"buyerCommission"`
-	SellerCommission int  `json:"sellerCommission"`
-	CanTrade         bool `json:"canTrade"`
-	CanWithdraw      bool `json:"canWithdraw"`
-	CanDeposit       bool `json:"canDeposit"`
-	AccountType      AccountType
-	Balances         []*Balance    `json:"balances"`
-	Permissions      []AccountType `json:"permissions"`
+	MakerCommission  int              `json:"makerCommission"`
+	TakerCommission  int              `json:"takerCommission"`
+	BuyerCommission  int              `json:"buyerCommission"`
+	SellerCommission int              `json:"sellerCommission"`
+	CanTrade         bool             `json:"canTrade"`
+	CanWithdraw      bool             `json:"canWithdraw"`
+	CanDeposit       bool             `json:"canDeposit"`
+	AccountType      PermissionType   `json:"accountType"`
+	Balances         []*Balance       `json:"balances"`
+	Permissions      []PermissionType `json:"permissions"`
 }
 
 const MaxAccountTradesLimit = 500
@@ -554,60 +781,70 @@ type AccountTradesReq struct {
 	Symbol    string `url:"symbol"`
 	OrderID   string `url:"orderId,omitempty"` // OrderID can only be used in combination with symbol
 	Limit     int    `url:"limit,omitempty"`   // Limit is the maximal number of elements to receive. Default 500; Max 1000
-	FromID    int    `url:"fromId,omitempty"`  // FromID is trade ID to fetch from. Default gets most recent trades
-	StartTime uint64 `url:"startTime,omitempty"`
-	EndTime   uint64 `url:"endTime,omitempty"`
+	FromID    int64  `url:"fromId,omitempty"`  // FromID is trade ID to fetch from. Default gets most recent trades
+	StartTime int64  `url:"startTime,omitempty"`
+	EndTime   int64  `url:"endTime,omitempty"`
 }
 
-type AccountTrades struct {
+type AccountTrade struct {
 	ID              int64  `json:"id"`
-	OrderID         uint64 `json:"orderId"`
+	OrderID         int64  `json:"orderId"`
 	OrderListID     int64  `json:"orderListId"`
 	Symbol          string `json:"symbol"`
-	QuoteQty        string `json:"quoteQty"`
 	Price           string `json:"price"`
 	Qty             string `json:"qty"`
+	QuoteQty        string `json:"quoteQty"`
 	Commission      string `json:"commission"`
 	CommissionAsset string `json:"commissionAsset"`
-	Time            uint64 `json:"time"`
+	Time            int64  `json:"time"`
 	Buyer           bool   `json:"isBuyer"`
 	Maker           bool   `json:"isMaker"`
 	BestMatch       bool   `json:"isBestMatch"`
 }
 
-type DatastreamReq struct {
+type DataStream struct {
 	ListenKey string `json:"listenKey" url:"listenKey"`
+}
+
+type MyPreventedMatchesReq struct {
+	Symbol           string `url:"symbol"`
+	PreventedMatchID int64  `url:"preventedMatchId,omitempty"`
+	FromID           int64  `url:"fromId,omitempty"` // FromID is trade ID to fetch from. Default gets most recent trades
+	StartTime        int64  `url:"startTime,omitempty"`
+	EndTime          int64  `url:"endTime,omitempty"`
 }
 
 type AggregatedTradeReq struct {
 	Symbol    string `url:"symbol"`              // Symbol is the symbol to fetch data for
-	FromID    int    `url:"fromId"`              // FromID to get aggregate trades from INCLUSIVE.
-	Limit     int    `url:"limit"`               // Limit is the maximal number of elements to receive. Default 500; Max 1000
-	StartTime uint64 `url:"startTime,omitempty"` // StartTime timestamp in ms to get aggregate trades from INCLUSIVE.
-	EndTime   uint64 `url:"endTime,omitempty"`   // EndTime timestamp in ms to get aggregate trades until INCLUSIVE.
+	FromID    int64  `url:"fromId"`              // FromID to get aggregate trades from INCLUSIVE.
+	StartTime int64  `url:"startTime,omitempty"` // StartTime timestamp in ms to get aggregate trades from INCLUSIVE.
+	EndTime   int64  `url:"endTime,omitempty"`   // EndTime timestamp in ms to get aggregate trades until INCLUSIVE.
+	Limit     int    `url:"limit,omitempty"`     // Limit is the maximal number of elements to receive. Default 500; Max 1000
 }
 
 type AggregatedTrade struct {
 	TradeID      int64  `json:"a"` // TradeID is the aggregate trade ID
 	Price        string `json:"p"` // Price is the trade price
 	Quantity     string `json:"q"` // Quantity is the trade quantity
-	FirstTradeID int    `json:"f"`
-	LastTradeID  int    `json:"l"`
-	Time         uint64 `json:"T"`
+	FirstTradeID int64  `json:"f"` // FirstTradeID is the first trade ID
+	LastTradeID  int64  `json:"l"` // LastTradeID is the last trade ID
+	Timestamp    int64  `json:"T"` // Timestamp is the trade timestamp
 	Maker        bool   `json:"m"` // Maker indicates if the buyer is the maker
 	BestMatch    bool   `json:"M"` // BestMatch indicates if the trade was at the best price match
 }
 
 type ExchangeInfoReq struct {
-	Symbol string `url:"symbol"`
+	Symbol      string           `url:"symbol,omitempty"`
+	Symbols     []string         `url:"symbols,omitempty"`
+	Permissions []PermissionType `url:"permissions,omitempty"`
 }
 
 type ExchangeInfo struct {
-	Timezone        string           `json:"timezone"`
-	ServerTime      uint64           `json:"serverTime"`
-	RateLimits      []RateLimit      `json:"rateLimits"`
-	ExchangeFilters []ExchangeFilter `json:"exchangeFilters"`
-	Symbols         []SymbolInfo     `json:"symbols"`
+	Timezone        string            `json:"timezone"`
+	ServerTime      int64             `json:"serverTime"`
+	RateLimits      []*RateLimit      `json:"rateLimits"`
+	ExchangeFilters []*ExchangeFilter `json:"exchangeFilters"`
+	Symbols         []*SymbolInfo     `json:"symbols"`
 }
 
 type RateLimitType string
@@ -664,25 +901,27 @@ type ExchangeFilter struct {
 }
 
 type SymbolInfo struct {
-	Symbol                     string             `json:"symbol"`
-	Status                     SymbolStatus       `json:"status"`
-	BaseAsset                  string             `json:"baseAsset"`
-	BaseAssetPrecision         int                `json:"baseAssetPrecision"`
-	QuoteAsset                 string             `json:"quoteAsset"`
-	QuotePrecision             int                `json:"quotePrecision"`
-	QuoteAssetPrecision        int                `json:"quoteAssetPrecision"`
-	BaseCommissionPrecision    int                `json:"baseCommissionPrecision"`
-	QuoteCommissionPrecision   int                `json:"quoteCommissionPrecision"`
-	OrderTypes                 []OrderType        `json:"orderTypes"`
-	IcebergAllowed             bool               `json:"icebergAllowed"`
-	OCOAllowed                 bool               `json:"ocoAllowed"`
-	QuoteOrderQtyMarketAllowed bool               `json:"quoteOrderQtyMarketAllowed"`
-	AllowTrailingStop          bool               `json:"allowTrailingStop"`
-	IsSpotTradingAllowed       bool               `json:"isSpotTradingAllowed"`
-	IsMarginTradingAllowed     bool               `json:"isMarginTradingAllowed"`
-	CancelReplaceAllowed       bool               `json:"cancelReplaceAllowed"`
-	Filters                    []SymbolInfoFilter `json:"filters"`
-	Permissions                []AccountType      `json:"permissions"`
+	Symbol                          string                    `json:"symbol"`
+	Status                          SymbolStatus              `json:"status"`
+	BaseAsset                       string                    `json:"baseAsset"`
+	BaseAssetPrecision              int                       `json:"baseAssetPrecision"`
+	QuoteAsset                      string                    `json:"quoteAsset"`
+	QuotePrecision                  int                       `json:"quotePrecision"`
+	QuoteAssetPrecision             int                       `json:"quoteAssetPrecision"`
+	BaseCommissionPrecision         int                       `json:"baseCommissionPrecision"`
+	QuoteCommissionPrecision        int                       `json:"quoteCommissionPrecision"`
+	OrderTypes                      []OrderType               `json:"orderTypes"`
+	IcebergAllowed                  bool                      `json:"icebergAllowed"`
+	OCOAllowed                      bool                      `json:"ocoAllowed"`
+	QuoteOrderQtyMarketAllowed      bool                      `json:"quoteOrderQtyMarketAllowed"`
+	AllowTrailingStop               bool                      `json:"allowTrailingStop"`
+	CancelReplaceAllowed            bool                      `json:"cancelReplaceAllowed"`
+	IsSpotTradingAllowed            bool                      `json:"isSpotTradingAllowed"`
+	IsMarginTradingAllowed          bool                      `json:"isMarginTradingAllowed"`
+	Filters                         []SymbolInfoFilter        `json:"filters"`
+	Permissions                     []PermissionType          `json:"permissions"`
+	DefaultSelfTradePreventionMode  SelfTradePreventionMode   `json:"defaultSelfTradePreventionMode"`
+	AllowedSelfTradePreventionModes []SelfTradePreventionMode `json:"allowedSelfTradePreventionModes"`
 }
 
 type SymbolStatus string
@@ -755,3 +994,34 @@ type SymbolInfoFilter struct {
 	// MAX_POSITION parameter
 	MaxPosition string `json:"maxPosition"`
 }
+
+type OCOStatus string
+
+const (
+	OCOStatusResponse    OCOStatus = "RESPONSE"
+	OCOStatusExecStarted OCOStatus = "EXEC_STARTED"
+	OCOStatusAllDone     OCOStatus = "ALL_DONE"
+)
+
+type OCOOrderStatus string
+
+const (
+	OCOOrderStatusExecuting OCOOrderStatus = "EXECUTING"
+	OCOOrderStatusAllDone   OCOOrderStatus = "ALL_DONE"
+	OCOOrderStatusReject    OCOOrderStatus = "REJECT"
+)
+
+type ContingencyType string
+
+const (
+	ContingencyTypeOCO ContingencyType = "OCO"
+)
+
+type SelfTradePreventionMode string
+
+const (
+	SelfTradePreventionModeNone        SelfTradePreventionMode = "NONE"
+	SelfTradePreventionModeExpireTaker SelfTradePreventionMode = "EXPIRE_TAKER"
+	SelfTradePreventionModeExpireMaker SelfTradePreventionMode = "EXPIRE_MAKER"
+	SelfTradePreventionModeExpireBoth  SelfTradePreventionMode = "EXPIRE_BOTH"
+)

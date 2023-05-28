@@ -1,34 +1,35 @@
 package ws
 
 import (
+	"context"
 	"net"
 	"strings"
 
-	"github.com/xenking/websocket"
+	"github.com/gobwas/ws"
 
 	"github.com/xenking/binance-api"
 )
 
-const DefaultPrefix = "wss://stream.binance.com:9443/ws/"
+const DefaultStreamPath = "wss://stream.binance.com:9443/ws/"
 
 type Client struct {
-	conn   net.Conn
-	Prefix string
+	conn       net.Conn
+	StreamPath string
 }
 
 func NewClient() *Client {
 	return &Client{
-		Prefix: DefaultPrefix,
+		StreamPath: DefaultStreamPath,
 	}
 }
 
 func NewCustomClient(prefix string, conn net.Conn) *Client {
-	return &Client{Prefix: prefix, conn: conn}
+	return &Client{StreamPath: prefix, conn: conn}
 }
 
-// Depth opens websocket with depth updates for the given symbol (eg @100ms frequency)
-func (c *Client) Depth(symbol string, frequency FrequencyType) (*Depth, error) {
-	wsc, err := newWSClient(c.conn, c.Prefix, strings.ToLower(symbol), "@depth", string(frequency))
+// DiffDepth opens websocket with depth updates for the given symbol to locally manage an order book
+func (c *Client) DiffDepth(ctx context.Context, symbol string, frequency FrequencyType) (*Depth, error) {
+	wsc, err := newWSClient(ctx, c.conn, c.StreamPath, strings.ToLower(symbol), EndpointDepthStream, string(frequency))
 	if err != nil {
 		return nil, err
 	}
@@ -37,8 +38,8 @@ func (c *Client) Depth(symbol string, frequency FrequencyType) (*Depth, error) {
 }
 
 // DepthLevel opens websocket with depth updates for the given symbol (eg @100ms frequency)
-func (c *Client) DepthLevel(symbol string, level DepthLevelType, frequency FrequencyType) (*DepthLevel, error) {
-	wsc, err := newWSClient(c.conn, c.Prefix, strings.ToLower(symbol), "@depth", string(level), string(frequency))
+func (c *Client) DepthLevel(ctx context.Context, symbol string, level DepthLevelType, frequency FrequencyType) (*DepthLevel, error) {
+	wsc, err := newWSClient(ctx, c.conn, c.StreamPath, strings.ToLower(symbol), EndpointDepthStream, string(level), string(frequency))
 	if err != nil {
 		return nil, err
 	}
@@ -46,9 +47,29 @@ func (c *Client) DepthLevel(symbol string, level DepthLevelType, frequency Frequ
 	return &DepthLevel{NewConn(wsc)}, nil
 }
 
-// AllMarketTickers opens websocket with with single depth summary for all tickers
-func (c *Client) AllMarketTickers() (*AllMarketTicker, error) {
-	wsc, err := newWSClient(c.conn, c.Prefix, "!ticker@arr")
+// IndividualTicker opens websocket with individual ticker updates for the given symbol
+func (c *Client) IndividualTicker(ctx context.Context, symbol string) (*IndividualTicker, error) {
+	wsc, err := newWSClient(ctx, c.conn, c.StreamPath, strings.ToLower(symbol), EndpointTickerStream)
+	if err != nil {
+		return nil, err
+	}
+
+	return &IndividualTicker{NewConn(wsc)}, nil
+}
+
+// IndividualRollingWindowTicker opens websocket with individual ticker updates for the given symbol with a custom rolling window
+func (c *Client) IndividualRollingWindowTicker(ctx context.Context, symbol string, window WindowSizeType) (*IndividualTicker, error) {
+	wsc, err := newWSClient(ctx, c.conn, c.StreamPath, strings.ToLower(symbol), EndpointWindowTickerStream, string(window))
+	if err != nil {
+		return nil, err
+	}
+
+	return &IndividualTicker{NewConn(wsc)}, nil
+}
+
+// AllMarketTickers opens websocket with ticker updates for all symbols
+func (c *Client) AllMarketTickers(ctx context.Context) (*AllMarketTicker, error) {
+	wsc, err := newWSClient(ctx, c.conn, c.StreamPath, EndpointAllMarketTickersStream)
 	if err != nil {
 		return nil, err
 	}
@@ -56,19 +77,19 @@ func (c *Client) AllMarketTickers() (*AllMarketTicker, error) {
 	return &AllMarketTicker{NewConn(wsc)}, nil
 }
 
-// IndivTicker opens websocket with with single depth summary for all tickers
-func (c *Client) IndivTicker(symbol string) (*IndivTicker, error) {
-	wsc, err := newWSClient(c.conn, c.Prefix, strings.ToLower(symbol), "@ticker")
+// AllMarketRollingWindowTickers opens websocket with ticker updates for all symbols with a custom rolling window
+func (c *Client) AllMarketRollingWindowTickers(ctx context.Context, window WindowSizeType) (*AllMarketTicker, error) {
+	wsc, err := newWSClient(ctx, c.conn, c.StreamPath, EndpointAllMarketWindowTickersStream, string(window), "@arr")
 	if err != nil {
 		return nil, err
 	}
 
-	return &IndivTicker{NewConn(wsc)}, nil
+	return &AllMarketTicker{NewConn(wsc)}, nil
 }
 
-// AllMarketMiniTickers opens websocket with with single depth summary for all mini-tickers
-func (c *Client) AllMarketMiniTickers() (*AllMarketMiniTicker, error) {
-	wsc, err := newWSClient(c.conn, c.Prefix, "!miniTicker@arr")
+// AllMarketMiniTickers opens websocket with
+func (c *Client) AllMarketMiniTickers(ctx context.Context) (*AllMarketMiniTicker, error) {
+	wsc, err := newWSClient(ctx, c.conn, c.StreamPath, EndpointAllMarketMiniTickersStream)
 	if err != nil {
 		return nil, err
 	}
@@ -76,39 +97,29 @@ func (c *Client) AllMarketMiniTickers() (*AllMarketMiniTicker, error) {
 	return &AllMarketMiniTicker{NewConn(wsc)}, nil
 }
 
-// IndivMiniTicker opens websocket with with single depth summary for all mini-tickers
-func (c *Client) IndivMiniTicker(symbol string) (*IndivMiniTicker, error) {
-	wsc, err := newWSClient(c.conn, c.Prefix, strings.ToLower(symbol), "@miniTicker")
+// IndividualMiniTicker opens websocket with
+func (c *Client) IndividualMiniTicker(ctx context.Context, symbol string) (*IndividualMiniTicker, error) {
+	wsc, err := newWSClient(ctx, c.conn, c.StreamPath, strings.ToLower(symbol), EndpointMiniTickerStream)
 	if err != nil {
 		return nil, err
 	}
 
-	return &IndivMiniTicker{NewConn(wsc)}, nil
+	return &IndividualMiniTicker{NewConn(wsc)}, nil
 }
 
-// AllBookTickers opens websocket with with single depth summary for all tickers
-func (c *Client) AllBookTickers() (*AllBookTicker, error) {
-	wsc, err := newWSClient(c.conn, c.Prefix, "!bookTicker")
+// IndividualBookTicker opens websocket with book ticker best bid or ask updates for the given symbol
+func (c *Client) IndividualBookTicker(ctx context.Context, symbol string) (*IndividualBookTicker, error) {
+	wsc, err := newWSClient(ctx, c.conn, c.StreamPath, strings.ToLower(symbol), EndpointBookTickerStream)
 	if err != nil {
 		return nil, err
 	}
 
-	return &AllBookTicker{NewConn(wsc)}, nil
-}
-
-// IndivBookTicker opens websocket with book ticker best bid or ask updates for the given symbol
-func (c *Client) IndivBookTicker(symbol string) (*IndivBookTicker, error) {
-	wsc, err := newWSClient(c.conn, c.Prefix, strings.ToLower(symbol), "@bookTicker")
-	if err != nil {
-		return nil, err
-	}
-
-	return &IndivBookTicker{NewConn(wsc)}, nil
+	return &IndividualBookTicker{NewConn(wsc)}, nil
 }
 
 // Klines opens websocket with klines updates for the given symbol with the given interval
-func (c *Client) Klines(symbol string, interval binance.KlineInterval) (*Klines, error) {
-	wsc, err := newWSClient(c.conn, c.Prefix, strings.ToLower(symbol), "@kline_", string(interval))
+func (c *Client) Klines(ctx context.Context, symbol string, interval binance.KlineInterval) (*Klines, error) {
+	wsc, err := newWSClient(ctx, c.conn, c.StreamPath, strings.ToLower(symbol), EndpointKlineStream, string(interval))
 	if err != nil {
 		return nil, err
 	}
@@ -117,8 +128,8 @@ func (c *Client) Klines(symbol string, interval binance.KlineInterval) (*Klines,
 }
 
 // AggTrades opens websocket with aggregated trades updates for the given symbol
-func (c *Client) AggTrades(symbol string) (*AggTrades, error) {
-	wsc, err := newWSClient(c.conn, c.Prefix, strings.ToLower(symbol), "@aggTrade")
+func (c *Client) AggTrades(ctx context.Context, symbol string) (*AggTrades, error) {
+	wsc, err := newWSClient(ctx, c.conn, c.StreamPath, strings.ToLower(symbol), EndpointAggregatedTradeStream)
 	if err != nil {
 		return nil, err
 	}
@@ -127,8 +138,8 @@ func (c *Client) AggTrades(symbol string) (*AggTrades, error) {
 }
 
 // Trades opens websocket with trades updates for the given symbol
-func (c *Client) Trades(symbol string) (*Trades, error) {
-	wsc, err := newWSClient(c.conn, c.Prefix, strings.ToLower(symbol), "@trade")
+func (c *Client) Trades(ctx context.Context, symbol string) (*Trades, error) {
+	wsc, err := newWSClient(ctx, c.conn, c.StreamPath, strings.ToLower(symbol), EndpointTradeStream)
 	if err != nil {
 		return nil, err
 	}
@@ -137,8 +148,8 @@ func (c *Client) Trades(symbol string) (*Trades, error) {
 }
 
 // AccountInfo opens websocket with account info updates
-func (c *Client) AccountInfo(listenKey string) (*AccountInfo, error) {
-	wsc, err := newWSClient(c.conn, c.Prefix, listenKey)
+func (c *Client) AccountInfo(ctx context.Context, listenKey string) (*AccountInfo, error) {
+	wsc, err := newWSClient(ctx, c.conn, c.StreamPath, listenKey)
 	if err != nil {
 		return nil, err
 	}
@@ -146,11 +157,12 @@ func (c *Client) AccountInfo(listenKey string) (*AccountInfo, error) {
 	return &AccountInfo{NewConn(wsc)}, nil
 }
 
-func newWSClient(conn net.Conn, paths ...string) (*websocket.Client, error) {
+func newWSClient(ctx context.Context, conn net.Conn, paths ...string) (net.Conn, error) {
 	path := strings.Join(paths, "")
 	if conn != nil {
-		return websocket.MakeClient(conn, path)
+		_, err := ws.Upgrade(conn)
+		return conn, err
 	}
-
-	return websocket.Dial(path)
+	newConn, _, _, err := ws.Dial(ctx, path)
+	return newConn, err
 }

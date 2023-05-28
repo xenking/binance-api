@@ -1,19 +1,32 @@
 package binance
 
 import (
-	"github.com/go-faster/errors"
 	"github.com/segmentio/encoding/json"
 )
 
+type ValidationError struct {
+	msg string
+}
+
+func (e ValidationError) Error() string {
+	return e.msg
+}
+
 var (
-	ErrNilRequest      = errors.New("request is nil")
-	ErrEmptySymbol     = errors.New("symbol are missing")
-	ErrEmptyOrderID    = errors.New("order id must be set")
-	ErrEmptyLimit      = errors.New("empty price or quantity")
-	ErrMinStrategyType = errors.New("minimal strategy type can't be lower than 1000000")
-	ErrEmptyMarket     = errors.New("quantity or quote quantity expected")
-	ErrNilUnmarshal    = errors.New("UnmarshalJSON on nil pointer")
-	ErrInvalidJSON     = errors.New("invalid json")
+	ErrNilRequest          = ValidationError{"nil request"}
+	ErrEmptySymbol         = ValidationError{"symbol is not set"}
+	ErrEmptyQuantity       = ValidationError{"quantity is not set"}
+	ErrEmptyPrice          = ValidationError{"price is not set"}
+	ErrEmptyStopPrice      = ValidationError{"stop price is not set"}
+	ErrEmptySide           = ValidationError{"order side is not set"}
+	ErrEmptyOrderID        = ValidationError{"order id is not set"}
+	ErrMinStrategyType     = ValidationError{"strategy type can not be lower than 1000000"}
+	ErrEmptyJSONResponse   = ValidationError{"empty json response"}
+	ErrInvalidJSON         = ValidationError{"invalid json"}
+	ErrInvalidTickerWindow = ValidationError{"invalid ticker window"}
+	ErrInvalidOrderType    = ValidationError{"invalid order type"}
+	// ErrIncorrectAccountEventType represents error when event type can't before determined
+	ErrIncorrectAccountEventType = ValidationError{"incorrect account event type"}
 )
 
 type APIError struct {
