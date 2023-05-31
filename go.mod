@@ -7,7 +7,7 @@ require (
 	github.com/gobwas/ws v1.2.1
 	github.com/google/go-querystring v1.1.0
 	github.com/segmentio/encoding v0.3.6
-	github.com/stretchr/testify v1.8.3
+	github.com/stretchr/testify v1.8.4
 	github.com/valyala/fasthttp v1.47.0
 	github.com/xenking/bytebufferpool v1.1.0
 	github.com/xenking/decimal v1.3.5
