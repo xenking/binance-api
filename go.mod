@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/go-faster/errors v0.6.1
-	github.com/gobwas/ws v1.2.1
+	github.com/gobwas/ws v1.3.0
 	github.com/google/go-querystring v1.1.0
 	github.com/segmentio/encoding v0.3.6
 	github.com/stretchr/testify v1.8.3
